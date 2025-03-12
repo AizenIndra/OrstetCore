@@ -1139,7 +1139,7 @@ void BattlegroundQueue::SendJoinMessageArenaQueue(Player* leader, GroupQueueInfo
             return;
         }
 
-        uint8 ArenaType = ginfo->ArenaType;
+        uint8 ArenaType = ginfo->ArenaType == 5 ? 1 : ginfo->ArenaType;
         uint32 ArenaTeamRating = ginfo->ArenaTeamRating;
         std::string TeamName = team->GetName();
 
@@ -1164,7 +1164,7 @@ void BattlegroundQueue::SendJoinMessageArenaQueue(Player* leader, GroupQueueInfo
 
 void BattlegroundQueue::SendExitMessageArenaQueue(GroupQueueInfo* ginfo)
 {
-    if (!sWorld->getBoolConfig(CONFIG_ARENA_QUEUE_ANNOUNCER_ENABLE))
+    if (!sWorld->getBoolConfig(CONFIG_ARENA_LEAVE_ANNOUNCER_ENABLE))
         return;
 
     if (!sScriptMgr->OnBeforeSendExitMessageArenaQueue(this, ginfo))
@@ -1177,7 +1177,7 @@ void BattlegroundQueue::SendExitMessageArenaQueue(GroupQueueInfo* ginfo)
     if (!ginfo->IsRated)
         return;
 
-    uint8 ArenaType = ginfo->ArenaType;
+    uint8 ArenaType = ginfo->ArenaType == 5 ? 1 : ginfo->ArenaType;
     uint32 ArenaTeamRating = ginfo->ArenaTeamRating;
     std::string TeamName = team->GetName();
 

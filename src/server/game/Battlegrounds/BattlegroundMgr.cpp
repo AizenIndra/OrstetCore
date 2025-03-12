@@ -432,7 +432,7 @@ bool BattlegroundMgr::CreateBattleground(BattlegroundTemplate const* bgTemplate)
     }
 
     bg->SetMapId(bgTemplate->BattlemasterEntry->mapid[0]);
-    bg->SetName(bgTemplate->BattlemasterEntry->name[sWorld->GetDefaultDbcLocale()]);
+    bg->SetName(bgTemplate->BattlemasterEntry->name[LOCALE_ruRU]);
     bg->SetArenaorBGType(bgTemplate->IsArena());
     bg->SetMinPlayersPerTeam(bgTemplate->MinPlayersPerTeam);
     bg->SetMaxPlayersPerTeam(bgTemplate->MaxPlayersPerTeam);
@@ -995,6 +995,7 @@ std::unordered_map<int, BattlegroundTypeId> BattlegroundMgr::queueToBg =
     { BATTLEGROUND_QUEUE_2v2,   BATTLEGROUND_AA },
     { BATTLEGROUND_QUEUE_3v3,   BATTLEGROUND_AA },
     { BATTLEGROUND_QUEUE_5v5,   BATTLEGROUND_AA },
+    { BATTLEGROUND_QUEUE_1v1,   BATTLEGROUND_AA },
 };
 
 std::unordered_map<int, Battleground*> BattlegroundMgr::bgtypeToBattleground =

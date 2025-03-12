@@ -90,6 +90,66 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(4); // 120 seconds
     });
 
+    // Притворится (custom)
+    ApplySpellFix({ 60352 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(4); // 21
+        spellInfo->MaxAffectedTargets = 1;
+        spellInfo->RangeEntry = sSpellRangeStore.LookupEntry(6);      
+    });
+
+    ApplySpellFix({ 69960 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(4); // 21
+        spellInfo->MaxAffectedTargets = 1;
+        spellInfo->RangeEntry = sSpellRangeStore.LookupEntry(6);
+        spellInfo->ProcChance = 101;
+        spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ANY);
+        spellInfo->Effects[EFFECT_0].TargetB = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ANY);
+        spellInfo->Effects[EFFECT_1].TargetA = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ANY);
+        spellInfo->Effects[EFFECT_1].TargetB = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ANY);
+        spellInfo->Effects[EFFECT_2].TargetA = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ANY);
+        spellInfo->Effects[EFFECT_2].TargetB = SpellImplicitTargetInfo(TARGET_DEST_TARGET_ANY);        
+    });
+
+    // дк требование кузни SpellFocusObject
+    ApplySpellFix({
+        62158,
+        53343,
+        70164,
+        53341,
+        53344,
+        53331,
+        54447,
+        53323,
+        54446,
+        53342 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->RequiresSpellFocus = 0;
+    });
+
+    // Премиум маунты
+    ApplySpellFix({ 31700, 18991, 18992}, [](SpellInfo* spellInfo)
+    {
+        spellInfo->CastTimeEntry = sSpellCastTimesStore.LookupEntry(3);
+    });
+
+    ApplySpellFix({ 28698, 23951 /* меню */ }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+        spellInfo->Effects[EFFECT_0].TargetB = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+        spellInfo->Effects[EFFECT_1].TargetA = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+        spellInfo->Effects[EFFECT_1].TargetB = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+        spellInfo->Effects[EFFECT_2].TargetA = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+        spellInfo->Effects[EFFECT_2].TargetB = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+    });
+
+    ApplySpellFix({41107, 62320}, [](SpellInfo* spellInfo)
+    {
+        spellInfo->AttributesEx3 |= SPELL_ATTR3_ALLOW_AURA_WHILE_DEAD;
+        spellInfo->AttributesEx |= SPELL_ATTR1_IMMUNITY_TO_HOSTILE_AND_FRIENDLY_EFFECTS;
+    });   
+
     ApplySpellFix({
         63026, // Force Cast (HACK: Target shouldn't be changed)
         63137  // Force Cast (HACK: Target shouldn't be changed; summon position should be untied from spell destination)
@@ -303,6 +363,45 @@ void SpellMgr::LoadSpellInfoCorrections()
     {
         spellInfo->ProcCharges = 6;
     });
+
+    ApplySpellFix({ 40874 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(21);
+        spellInfo->Attributes |= SPELL_ATTR0_AURA_IS_DEBUFF;
+        spellInfo->AttributesEx3 |= SPELL_ATTR3_ALLOW_AURA_WHILE_DEAD;
+        spellInfo->Attributes |= SPELL_ATTR0_NO_IMMUNITIES;
+        spellInfo->ProcCharges = 50;
+        spellInfo->StackAmount = 10;
+    });
+
+    ApplySpellFix({ 29001, 29002, 29003}, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(TARGET_UNIT_CASTER);
+    });
+
+    ApplySpellFix({ 62519, 66721 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_1].BasePoints = -1; // еффект повышение роста
+        spellInfo->Attributes |= SPELL_ATTR0_AURA_IS_DEBUFF;
+        spellInfo->AttributesEx3 |= SPELL_ATTR3_ALLOW_AURA_WHILE_DEAD;
+        spellInfo->AttributesEx |= SPELL_ATTR1_IMMUNITY_TO_HOSTILE_AND_FRIENDLY_EFFECTS;
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(21);
+        spellInfo->Attributes |= SPELL_ATTR0_NO_IMMUNITIES;
+        spellInfo->ProcCharges = 50;
+        spellInfo->StackAmount = 50;
+    });
+
+    // rank system
+    ApplySpellFix({ 71201 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Attributes |= SPELL_ATTR0_AURA_IS_DEBUFF;
+        spellInfo->AttributesEx3 |= SPELL_ATTR3_ALLOW_AURA_WHILE_DEAD;
+        spellInfo->AttributesEx |= SPELL_ATTR1_IMMUNITY_TO_HOSTILE_AND_FRIENDLY_EFFECTS;
+        spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(21);
+        spellInfo->Attributes |= SPELL_ATTR0_NO_IMMUNITIES;
+        spellInfo->ProcCharges = 50;
+        spellInfo->StackAmount = 50;
+    });    
 
     // The Eye of Acherus (no spawn in phase 2 in db)
     ApplySpellFix({ 51852 }, [](SpellInfo* spellInfo)
@@ -1545,7 +1644,7 @@ void SpellMgr::LoadSpellInfoCorrections()
     });
 
     // Break Ice
-    ApplySpellFix({ 46638 }, [](SpellInfo* spellInfo)
+    ApplySpellFix({ 46638, 71942 }, [](SpellInfo* spellInfo)
     {
         spellInfo->AttributesEx3 &= ~SPELL_ATTR3_ONLY_ON_PLAYER; // Obvious fail, it targets gameobject...
     });
@@ -2261,16 +2360,19 @@ void SpellMgr::LoadSpellInfoCorrections()
     });
 
     // Trial of the Champion, Desecration
-    ApplySpellFix({ 67778, 67877 }, [](SpellInfo* spellInfo)
-    {
-        spellInfo->Effects[EFFECT_0].TriggerSpell = 68766;
-    });
+    // ApplySpellFix({ 67778, 67877 }, [](SpellInfo* spellInfo)
+    // {
+    //     spellInfo->Effects[EFFECT_0].TriggerSpell = 68766;
+    // });
 
-    // Killing Spree (Off hand damage)
-    ApplySpellFix({ 57842 }, [](SpellInfo* spellInfo)
+    ApplySpellFix({
+        55741, // Desecration (Rank 1)
+        68766, // Desecration (Rank 2)
+        57842  // Killing Spree (Off hand damage)
+    }, [](SpellInfo* spellInfo)
     {
         spellInfo->RangeEntry = sSpellRangeStore.LookupEntry(2); // Melee Range
-    });
+    });   
 
     // Trial of the Crusader, Jaraxxus Intro spell
     ApplySpellFix({ 67888 }, [](SpellInfo* spellInfo)

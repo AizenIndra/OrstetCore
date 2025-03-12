@@ -539,7 +539,7 @@ struct AreaTableEntry
 
     [[nodiscard]] bool IsFlyable() const
     {
-        return flags & AREA_FLAG_OUTLAND;
+        return (flags & AREA_FLAG_OUTLAND);
     }
 };
 

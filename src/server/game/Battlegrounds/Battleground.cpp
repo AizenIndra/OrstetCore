@@ -47,6 +47,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldStatePackets.h"
+#include "Translate.h"
+
+#define GetText(a, b, c)    a->GetSession()->GetSessionDbLocaleIndex() == LOCALE_ruRU ? b : c
 
 namespace Acore
 {
@@ -279,23 +282,143 @@ void Battleground::Update(uint32 diff)
             {
                 _ProcessJoin(diff);
                 _CheckSafePositions(diff);
+                _chechHp();
             }
             break;
         case STATUS_IN_PROGRESS:
             if (isArena())
             {
-                if (GetStartTime() >= 46 * MINUTE * IN_MILLISECONDS) // pussywizard: 1min startup + 45min allowed duration
+                if (GetStartTime() >= 46 * MINUTE * IN_MILLISECONDS) 
                 {
                     EndBattleground(PVP_TEAM_NEUTRAL);
                     return;
+                } else {
+                    // Anti-Draw (Dementia)
+                    if (sWorld->getBoolConfig(CONFIG_ARENA_DEMENTIA_ENABLED))
+                    {
+                        for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
+                        {
+                            if (Player* player = ObjectAccessor::FindPlayer(itr->first))
+                            {
+                                if (player->InArena() && (GetArenaType() == ARENA_TYPE_5v5 || GetArenaType() == ARENA_TYPE_2v2) && GetStatus() != STATUS_WAIT_LEAVE)
+                                {
+                                    Aura* demAura = player->GetAura(40874);
+
+                                    if (!player->IsSpectator() && !player->IsGameMaster() && !player->isDead())
+                                    {
+                                        if ((GetStartTime() >= 10 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 10.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (!player->HasAura(40874))
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 11 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 11.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 1)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 12 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 12.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 2)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 13 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 13.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 3)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 14 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 14.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 4)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 15 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 15.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 5)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 16 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 16.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 6)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 17 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 17.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 7)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 18 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 18.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 8)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 19 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 19.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 9)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+
+                                        if ((GetStartTime() >= 20 * MINUTE * IN_MILLISECONDS) && (GetStartTime() <= 20.1 * MINUTE * IN_MILLISECONDS))
+                                        {
+                                            if (demAura->GetStackAmount() == 10)
+                                            {
+                                                player->AddAura(40874, player);
+                                                ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_DEMETIA_STACK, EN_DEMETIA_STACK));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             else
             {
                 _ProcessResurrect(diff);
-                if (sBattlegroundMgr->GetPrematureFinishTime() && (GetPlayersCountByTeam(TEAM_ALLIANCE) < GetMinPlayersPerTeam() || GetPlayersCountByTeam(TEAM_HORDE) < GetMinPlayersPerTeam()))
-                    _ProcessProgress(diff);
-                else if (m_PrematureCountDown)
+                // if (sBattlegroundMgr->GetPrematureFinishTime() && (GetPlayersCountByTeam(TEAM_ALLIANCE) < GetMinPlayersPerTeam() || GetPlayersCountByTeam(TEAM_HORDE) < GetMinPlayersPerTeam()))
+                //     _ProcessProgress(diff);
+                // else if (m_PrematureCountDown)
+                //     m_PrematureCountDown = false;
+                if (m_PrematureCountDown)
                     m_PrematureCountDown = false;
             }
             break;
@@ -313,6 +436,31 @@ void Battleground::Update(uint32 diff)
     PostUpdateImpl(diff);
 
     sScriptMgr->OnBattlegroundUpdate(this, diff);
+}
+
+inline void Battleground::_chechHp()
+{
+    for (auto const& [playerGuid, player] : GetPlayers())
+    {
+        uint32 currentHp = player->GetHealth();
+        uint32 maxHp = player->GetMaxHealth();        
+
+        if (currentHp != maxHp) {
+            player->SetHealth(maxHp);
+        }
+
+        if (player->getPowerType() == POWER_MANA)
+            player->SetPower(POWER_MANA, player->GetMaxPower(POWER_MANA));
+
+        if (!player->HasAura(SPELL_ARENA_PREPARATION))
+            player->CastSpell(player, SPELL_ARENA_PREPARATION, true);
+
+        Pet* pet = player->GetPet();
+        if (pet) {
+            pet->SetHealth(pet->GetMaxHealth());
+            pet->SetPower(pet->getPowerType(), pet->GetMaxPower(pet->getPowerType()));
+        }
+    }
 }
 
 inline void Battleground::_CheckSafePositions(uint32 diff)
@@ -552,9 +700,25 @@ inline void Battleground::_ProcessJoin(uint32 diff)
             if (BattlegroundMap* map = GetBgMap())
                 map->SetVisibilityRange(World::GetMaxVisibleDistanceInBGArenas());
 
+            // counter
+            uint8 counter_arena{0}; 
+            std::ostringstream announce_arena;
+            announce_arena << "|TInterface\\GossipFrame\\Battlemastergossipicon:15:15:|t |cffff9933[Арена 1x1]: Стартовал бой ";  
+
             for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
                 if (Player* player = itr->second)
                 {
+                    if (GetArenaType() == ARENA_TYPE_5v5) {
+                        if (counter_arena == 0) {
+                            announce_arena << "|cffffff4d" << player->GetName() << "|cffff9933 vs |cffffff4d";
+                            counter_arena++;
+                        }
+                        else {
+                            announce_arena << player->GetName() << "|cffff9933 -- |cffffff4d.sp spec " << player->GetName() << "|r";
+                            counter_arena++;
+                        }
+                    }
+
                     WorldPacket status;
                     sBattlegroundMgr->BuildBattlegroundStatusPacket(&status, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, 0, GetStartTime(), GetArenaType(), player->GetBgTeamId());
                     player->GetSession()->SendPacket(&status);
@@ -579,6 +743,9 @@ inline void Battleground::_ProcessJoin(uint32 diff)
 
                     player->UpdateObjectVisibility(true);
                 }
+
+            if (counter_arena > 1)
+                ChatHandler(nullptr).SendWorldText(LANG_ARENA_STARTED_CUSTOM, announce_arena.str().c_str());
 
             for (SpectatorList::const_iterator itr = m_Spectators.begin(); itr != m_Spectators.end(); ++itr)
                 ArenaSpectator::HandleResetCommand(*itr);
@@ -869,10 +1036,24 @@ void Battleground::EndBattleground(PvPTeamId winnerTeamId)
                     player->SetRandomWinner(true);
             }
 
+            // квест на победу бг
+            if (isBattleground()) {
+                if (sWorld->getBoolConfig(CONFIG_RANK_SYSTEM_WIN_ENABLE)) {
+                    player->RewardRankPoints(sWorld->getIntConfig(CONFIG_RANK_SYSTEM_WIN_RATE_BG), Player::PVP_BG);
+                    player->RewardRankMoney(4/*бг*/, sWorld->getIntConfig(CONFIG_RANK_SYSTEM_WIN_RATE_BG));
+                }
+
+                if (player->GetQuestStatus(26035) == QUEST_STATUS_INCOMPLETE)
+                    player->KilledMonsterCredit(200003);
+            }
+
             player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_BG, player->GetMapId());
         }
         else
         {
+            if (isBattleground() && sWorld->getBoolConfig(CONFIG_RANK_SYSTEM_WIN_ENABLE)) {
+                player->RewardRankMoney(4/*бг*/, sWorld->getIntConfig(CONFIG_RANK_SYSTEM_WIN_RATE_BG), false);
+            }
             if (IsRandom() || BattlegroundMgr::IsBGWeekend(GetBgTypeID(true)))
                 UpdatePlayerScore(player, SCORE_BONUS_HONOR, GetBonusHonorFromKill(loser_kills));
         }
@@ -1120,6 +1301,9 @@ void Battleground::AddPlayer(Player* player)
     if (player->HasPlayerFlag(PLAYER_FLAGS_AFK))
         player->ToggleAFK();
 
+    if (player->GetGroup() && m_ArenaType == ARENA_TYPE_5v5)
+        player->GetGroup()->Disband();   
+
     sScriptMgr->OnBattlegroundBeforeAddPlayer(this, player);
 
     // score struct must be created in inherited class
@@ -1142,9 +1326,11 @@ void Battleground::AddPlayer(Player* player)
     if (isArena())
     {
         // restore pets health before remove
-        if (Pet* pet = player->GetPet())
-            if (pet->IsAlive())
+        if (Pet* pet = player->GetPet()) {
+            if (pet->IsAlive()) {
                 pet->SetHealth(pet->GetMaxHealth());
+            }
+        }
 
         player->RemoveArenaEnchantments(TEMP_ENCHANTMENT_SLOT);
         player->DestroyConjuredItems(true);
@@ -1158,8 +1344,9 @@ void Battleground::AddPlayer(Player* player)
     }
     else
     {
-        if (GetStatus() == STATUS_WAIT_JOIN)                 // not started yet
+        if (GetStatus() == STATUS_WAIT_JOIN) {                // not started yet
             player->CastSpell(player, SPELL_PREPARATION, true);   // reduces all mana cost of spells.
+        }
     }
 
     // Xinef: reset all map criterias on map enter
@@ -1306,7 +1493,7 @@ void Battleground::ReadyMarkerClicked(Player* p)
     readyMarkerClickedSet.insert(p->GetGUID());
     uint32 count = readyMarkerClickedSet.size();
     uint32 req = ArenaTeam::GetReqPlayersForType(GetArenaType());
-    p->GetSession()->SendNotification("You are marked as ready %u/%u", count, req);
+    ChatHandler(p->GetSession()).PSendSysMessage("|TInterface\\GossipFrame\\Battlemastergossipicon:15:15:|t |cffff9933[Arena Ready Marker]: |cffffff4d%u/%u|r", count, req);
     if (count == req)
     {
         m_Events |= BG_STARTING_EVENT_2;

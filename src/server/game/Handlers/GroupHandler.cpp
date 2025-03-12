@@ -93,6 +93,12 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
         return;
     }
 
+    if (GetPlayer()->IsDeathMatch() || invitedPlayer->IsDeathMatch())
+    {
+        SendPartyResult(PARTY_OP_INVITE, membername, ERR_IGNORING_YOU_S);
+            return;
+    }    
+
     // restrict invite to GMs
     if (!sWorld->getBoolConfig(CONFIG_ALLOW_GM_GROUP) && !invitingPlayer->IsGameMaster() && invitedPlayer->IsGameMaster())
     {
@@ -247,6 +253,11 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& recvData)
     }
 
     Player* leader = ObjectAccessor::FindConnectedPlayer(group->GetLeaderGUID());
+    if (!leader)
+        return;
+
+    if (leader->IsDeathMatch())
+        return;
 
     // Forming a new group, create it
     if (!group->IsCreated())

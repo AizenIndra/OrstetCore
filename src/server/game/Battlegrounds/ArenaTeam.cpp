@@ -669,6 +669,8 @@ uint32 ArenaTeam::GetPoints(uint32 memberRating)
     // Type penalties for teams < 5v5
     if (Type == ARENA_TEAM_2v2)
         points *= 0.76f;
+    if (Type == ARENA_TEAM_5v5)
+        points *= 0.64f;    
     else if (Type == ARENA_TEAM_3v3)
         points *= 0.88f;
 
@@ -768,6 +770,9 @@ int32 ArenaTeam::GetRatingMod(uint32 ownRating, uint32 opponentRating, bool won 
     }
     else
         mod = sWorld->getFloatConfig(CONFIG_ARENA_LOSE_RATING_MODIFIER) * (-chance);
+
+    if (GetType() == ARENA_TYPE_5v5 && won)
+        mod *= 1.7f;    
 
     return (int32)ceil(mod);
 }
@@ -1087,7 +1092,7 @@ std::unordered_map<uint32, uint8> ArenaTeam::ArenaSlotByType =
 {
     { ARENA_TEAM_2v2, ARENA_SLOT_2v2},
     { ARENA_TEAM_3v3, ARENA_SLOT_3v3},
-    { ARENA_TEAM_5v5, ARENA_SLOT_5v5}
+    { ARENA_TEAM_5v5, ARENA_SLOT_5v5},
 };
 
 // init/update unordered_map ArenaReqPlayersForType
@@ -1095,7 +1100,7 @@ std::unordered_map<uint8, uint8> ArenaTeam::ArenaReqPlayersForType =
 {
     { ARENA_TYPE_2v2, 4},
     { ARENA_TYPE_3v3, 6},
-    { ARENA_TYPE_5v5, 10}
+    { ARENA_TYPE_5v5, 2},
 };
 
 void ArenaTeam::SetEmblem(uint32 backgroundColor, uint8 emblemStyle, uint32 emblemColor, uint8 borderStyle, uint32 borderColor)

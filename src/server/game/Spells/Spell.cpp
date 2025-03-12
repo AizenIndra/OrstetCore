@@ -23,6 +23,7 @@
 #include "CellImpl.h"
 #include "Common.h"
 #include "ConditionMgr.h"
+#include "DeathMatch.h"
 #include "DisableMgr.h"
 #include "DynamicObject.h"
 #include "GameObjectAI.h"
@@ -6560,10 +6561,18 @@ SpellCastResult Spell::CheckCast(bool strict)
                     return SPELL_FAILED_DONT_REPORT;
                 // can't change during already started arena/battleground
                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
+                {
+                    Player* plr = m_caster->ToPlayer();
+                    if (plr->InBattlegroundQueueForBattlegroundQueueType(BATTLEGROUND_QUEUE_5v5))
+                    {
+                        plr->GetSession()->SendAreaTriggerMessage("Нельзя менять таланты во время ожидания арены 1v1");
+                        return SPELL_FAILED_DONT_REPORT;
+                    }
                     if (Battleground const* bg = m_caster->ToPlayer()->GetBattleground())
                         if (bg->GetStatus() == STATUS_IN_PROGRESS)
                             return SPELL_FAILED_NOT_IN_BATTLEGROUND;
-                break;
+                }
+                break;                
             default:
                 break;
         }
@@ -6684,7 +6693,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     {
                         Battlefield* Bf = sBattlefieldMgr->GetBattlefieldToZoneId(m_originalCaster->GetZoneId());
                         if (AreaTableEntry const* pArea = sAreaTableStore.LookupEntry(m_originalCaster->GetAreaId()))
-                            if ((pArea->flags & AREA_FLAG_NO_FLY_ZONE) || (Bf && !Bf->CanFlyIn()))
+                            if ((pArea->flags & AREA_FLAG_NO_FLY_ZONE) || (Bf && !Bf->CanFlyIn()) || (DeathMatchMgr->IsDeathMatchZone(m_originalCaster->GetZoneId())))
                                 return SPELL_FAILED_NOT_HERE;
                     }
                     break;

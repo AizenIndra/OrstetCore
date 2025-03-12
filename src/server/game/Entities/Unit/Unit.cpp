@@ -9379,10 +9379,10 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
 
     // All ok. Check current trigger spell
     SpellInfo const* triggerEntry = sSpellMgr->GetSpellInfo(trigger_spell_id);
-    if (!triggerEntry)
+    if (triggerEntry == nullptr)
     {
         // Don't cast unknown spell
-        LOG_ERROR("entities.unit", "Unit::HandleProcTriggerSpell: Spell {} (effIndex: {}) has unknown TriggerSpell {}. Unhandled custom case?", auraSpellInfo->Id, triggeredByAura->GetEffIndex(), trigger_spell_id);
+        // LOG_ERROR("entities.unit", "Unit::HandleProcTriggerSpell: Spell {} (effIndex: {}) has unknown TriggerSpell {}. Unhandled custom case?", auraSpellInfo->Id, triggeredByAura->GetEffIndex(), trigger_spell_id);
         return false;
     }
 
@@ -9797,7 +9797,7 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
     }
 
     // try detect target manually if not set
-    if (!target)
+    if (target == nullptr)
         target = !(procFlags & (PROC_FLAG_DONE_SPELL_MAGIC_DMG_CLASS_POS | PROC_FLAG_DONE_SPELL_NONE_DMG_CLASS_POS)) && triggerEntry->IsPositive() ? this : victim;
 
     if (cooldown)
@@ -14457,7 +14457,6 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 if (Unit* critter = ObjectAccessor::GetUnit(*this, GetCritterGUID()))
                     critter->UpdateSpeed(mtype, forced);
             }
-            ToPlayer()->SetCanTeleport(true);
         }
 
         switch (mtype)
@@ -16446,7 +16445,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                     continue;
 
                 // If not trigger by default and spellProcEvent == nullptr - skip
-                if (!isTriggerAura[aurEff->GetAuraType()] && !triggerData.spellProcEvent)
+                if (!isTriggerAura[aurEff->GetAuraType()] && triggerData.spellProcEvent == nullptr)
                     continue;
 
                 switch (aurEff->GetAuraType())

@@ -20,7 +20,36 @@
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
+
+void AddSC_Professions_NPC();
+void AddSC_npc_trainer();
+void AddSC_Enchat_npc_new();
+void AddSC_Login_script();
+void AddSC_DuelReset();
+void AddSC_CustomTeleportOrCommand();
+void AddSC_TemplateNPC();
+void AddSC_npc_1v1arena();
+void AddSC_DeathMatchkill();
+void AddSC_NPC_RANK_VENDOR();
+void AddSC_ServerMenuPlayerGossip();
+void AddSC_npc_custom_boss();
+void AddSC_RewardRangKillBoss();
+void AddSC_CustomBossAnna();
+
 void AddCustomScripts()
 {
-    // MyExampleScript()
+    AddSC_Professions_NPC();
+    AddSC_npc_trainer();
+    AddSC_Enchat_npc_new(); 
+    AddSC_Login_script();
+    AddSC_DuelReset();
+    AddSC_CustomTeleportOrCommand();
+    AddSC_TemplateNPC();
+    AddSC_npc_1v1arena();
+    AddSC_DeathMatchkill();
+    AddSC_NPC_RANK_VENDOR();
+    AddSC_ServerMenuPlayerGossip();
+    AddSC_npc_custom_boss();
+    AddSC_RewardRangKillBoss();
+    AddSC_CustomBossAnna();
 }

@@ -416,7 +416,7 @@ public:
             return false;
         }
 
-        Battleground* bg = sBattlegroundMgr->CreateNewBattleground(randomizedArenaBgTypeId, GetBattlegroundBracketById(bgt->GetMapId(), bgt->GetBracketId()), ArenaType(hcnt >= 2 ? hcnt : 2), false);
+        Battleground* bg = sBattlegroundMgr->CreateNewBattleground(randomizedArenaBgTypeId, GetBattlegroundBracketById(bgt->GetMapId(), bgt->GetBracketId()), ArenaType(hcnt >= 2 ? ARENA_TYPE_2v2 : ARENA_TYPE_5v5), false);
         if (!bg)
         {
             handler->SendErrorMessage("Couldn't create arena map!");
@@ -438,8 +438,9 @@ public:
             player->SetEntryPoint();
 
             uint32 queueSlot = 0;
+            uint8 arenatype = count == 2 ? ARENA_TYPE_5v5 : count == 4 ? ARENA_TYPE_2v2 : ARENA_TYPE_3v3;
             WorldPacket data;
-            sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, bg, queueSlot, STATUS_IN_PROGRESS, 0, bg->GetStartTime(), bg->GetArenaType(), teamId);
+            sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, bg, queueSlot, STATUS_IN_PROGRESS, 0, bg->GetStartTime(), arenatype, teamId);
             player->GetSession()->SendPacket(&data);
 
             // Remove from LFG queues
@@ -651,6 +652,13 @@ public:
         if (!target)
         {
             handler->SendErrorMessage(LANG_SELECT_CHAR_OR_CREATURE);
+            return false;
+        }
+
+        // запрет прописи ранга
+        if (spell->Id == 71201) {
+            handler->PSendSysMessage(LANG_COMMAND_SPELL_BROKEN, spell->Id);
+            handler->SetSentErrorMessage(true);
             return false;
         }
 
@@ -1716,6 +1724,25 @@ public:
         if (!playerTarget)
             return false;
 
+        if (playerTarget->GetSession()->GetSecurity() == SEC_ADMINISTRATOR)
+        {    
+            constexpr static const uint32 ItemEventList[6] = {
+                34628, 34629, 34630, 34634, 34635,  34636
+            };
+
+            bool ok = false;
+
+            for (const auto& i: ItemEventList)
+                if (itemId == i)
+                    ok = true;
+
+            if (!ok) {
+                handler->PSendSysMessage(LANG_COMMAND_ITEMIDINVALID, itemTemplate->ItemId);
+                handler->SetSentErrorMessage(true);                
+                return false;
+            }
+        }        
+
         // Subtract
         if (count < 0)
         {
@@ -1960,6 +1987,7 @@ public:
         std::string userName          = handler->GetAcoreString(LANG_ERROR);
         ObjectGuid::LowType lowguid   = target->GetGUID().GetCounter();
         uint32 accId                  = 0;
+        uint32 accBonuses             = 0;
         std::string eMail             = handler->GetAcoreString(LANG_ERROR);
         std::string regMail           = handler->GetAcoreString(LANG_ERROR);
         uint32 security               = 0;
@@ -1992,6 +2020,7 @@ public:
         uint32 money                    = 0;
         uint32 xp                       = 0;
         uint32 xptotal                  = 0;
+        uint32 rankPoints               = 0;
 
         // Position data print
         uint32 mapId;
@@ -2018,6 +2047,7 @@ public:
             }
 
             accId             = playerTarget->GetSession()->GetAccountId();
+            accBonuses        = playerTarget->GetSession()->GetBonuses();
             money             = playerTarget->GetMoney();
             totalPlayerTime   = playerTarget->GetTotalPlayedTime();
             level             = playerTarget->GetLevel();
@@ -2030,6 +2060,7 @@ public:
             alive             = playerTarget->IsAlive() ? handler->GetAcoreString(LANG_YES) : handler->GetAcoreString(LANG_NO);
             gender            = playerTarget->getGender();
             phase             = playerTarget->GetPhaseMask();
+            rankPoints        = playerTarget->GetRankPoints();
         }
         // get additional information from DB
         else
@@ -2205,6 +2236,9 @@ public:
         // Output V. LANG_PINFO_ACC_ACCOUNT
         handler->PSendSysMessage(LANG_PINFO_ACC_ACCOUNT, userName, accId, security);
 
+        // Output LANG_PINFO_ACC_BONUSES
+        handler->PSendSysMessage(LANG_PINFO_ACC_BONUSES, accBonuses);        
+
         // Output VI. LANG_PINFO_ACC_LASTLOGIN
         handler->PSendSysMessage(LANG_PINFO_ACC_LASTLOGIN, lastLogin, failedLogins);
 
@@ -2363,6 +2397,9 @@ public:
 
         // Output XX. LANG_PINFO_CHR_PLAYEDTIME
         handler->PSendSysMessage(LANG_PINFO_CHR_PLAYEDTIME, (secsToTimeString(totalPlayerTime, true)));
+
+        // Outpout XX. LANG_PINFO_CHAR_RANK_POINTS
+        handler->PSendSysMessage(LANG_PINFO_CHAR_RANK_POINTS, uint32(rankPoints));
 
         // Mail Data - an own query, because it may or may not be useful.
         // SQL: "SELECT SUM(CASE WHEN (checked & 1) THEN 1 ELSE 0 END) AS 'readmail', COUNT(*) AS 'totalmail' FROM mail WHERE `receiver` = ?"

@@ -18,6 +18,8 @@
 #include "Group.h"
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
+#include "Battlefield.h"
+#include "BattlefieldMgr.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
@@ -1931,7 +1933,10 @@ GroupJoinBattlegroundResult Group::CanJoinBattlegroundQueue(Battleground const* 
 {
     // check if this group is LFG group
     if (isLFGGroup())
-        return ERR_LFG_CANT_USE_BATTLEGROUND;
+        return ERR_LFG_CANT_USE_BATTLEGROUND;   
+
+    if(!isRated)
+        return ERR_BATTLEGROUND_JOIN_FAILED; 
 
     BattlemasterListEntry const* bgEntry = sBattlemasterListStore.LookupEntry(bgTemplate->GetBgTypeID());
     if (!bgEntry)
@@ -1940,7 +1945,7 @@ GroupJoinBattlegroundResult Group::CanJoinBattlegroundQueue(Battleground const* 
     // too many players in the group
     if (GetMembersCount() > bgEntry->maxGroupSize)
         return ERR_BATTLEGROUND_NONE;
-
+        
     // get a player as reference, to compare other players' stats to (arena team id, level bracket, etc.)
     Player* reference = GetFirstMember()->GetSource();
     if (!reference)
@@ -1960,6 +1965,12 @@ GroupJoinBattlegroundResult Group::CanJoinBattlegroundQueue(Battleground const* 
     for (GroupReference* itr = GetFirstMember(); itr != nullptr; itr = itr->next(), ++memberscount)
     {
         Player* member = itr->GetSource();
+
+        // оло
+        if (member->GetZoneId() == 4197) {
+            member->GetSession()->SendAreaTriggerMessage("Покиньте зону оло перед входом на арену!");
+            return ERR_BATTLEGROUND_JOIN_FAILED;
+        }
 
         // don't let join with offline members
         if (!member)

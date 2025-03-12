@@ -86,6 +86,9 @@ typedef void(*bgZoneRef)(Battleground*, WorldPacket&);
 #define SKILL_PERM_BONUS(x)    int16(PAIR32_HIPART(x))
 #define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t, p)
 
+#define GetCustomText(a, b, c)    a->GetSession()->GetSessionDbLocaleIndex() == LOCALE_ruRU ? b : c
+#define RANKSYSTEMID 71201
+
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
 {
@@ -1296,6 +1299,9 @@ public:
     void UpdateLootAchievements(LootItem* item, Loot* loot);
     void UpdateTitansGrip();
 
+    void SetDeathMatch(bool inornot) { m_deathmatch = inornot; }
+    bool IsDeathMatch() const { return m_deathmatch; }    
+
     InventoryResult CanTakeMoreSimilarItems(uint32 entry, uint32 count, Item* pItem, uint32* no_space_count = nullptr) const;
     InventoryResult CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& dest, uint32 entry, uint32 count, Item* pItem = nullptr, bool swap = false, uint32* no_space_count = nullptr) const;
 
@@ -1454,6 +1460,7 @@ public:
     void SetMonthlyQuestStatus(uint32 quest_id);
     void SetSeasonalQuestStatus(uint32 quest_id);
     void ResetDailyQuestStatus();
+    void ResetDailyArenaCapStatus();
     void ResetWeeklyQuestStatus();
     void ResetMonthlyQuestStatus();
     void ResetSeasonalQuestStatus(uint16 event_id);
@@ -2088,6 +2095,12 @@ public:
     uint8 GetGrantableLevels() { return m_grantableLevels; }
     void SetGrantableLevels(uint8 val) { m_grantableLevels = val; }
 
+    uint32 GetRankPoints() { return m_rankPoints; }
+    void SetRankPoints(uint32 val) { m_rankPoints = val; }
+
+    uint32 GetArenaCapToday() { return m_todayArena; }
+    void SetArenaCapToday(uint32 val) { m_todayArena = val; }
+
     ReputationMgr&       GetReputationMgr()       { return *m_reputationMgr; }
     [[nodiscard]] ReputationMgr const& GetReputationMgr() const { return *m_reputationMgr; }
     [[nodiscard]] ReputationRank GetReputationRank(uint32 faction_id) const;
@@ -2590,6 +2603,64 @@ public:
 
     std::string GetPlayerName();
 
+    // за какие услуги получен опыт
+    enum RewardSource
+    {
+        PVP_HK,
+        PVP_BG,
+        PVP_ARENA,
+        PVP_QUEST,
+        PVP_ITEM,
+        PVP_KILL,
+        PVE_ACHIV,
+        EXCHANGER_HONOR,
+        EVENT_REWARD,
+        KILL_BOSS,
+    };
+
+    // опыты для каждого ранга
+    constexpr static const uint32 pvp_rang_points[50] = {
+                             /*   1    2     3     4      5    6     7       8     9     10      11     12 */
+                                 250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 60000, 80000, 100000, 125000,
+                                 /* 13     14      15        16     17     18        19    20       21     22    */
+                                 150000, 175000, 200000, 225000, 250000, 275000, 300000, 350000, 400000, 450000,
+                                /* 23      24      25       26     27     28        29     30      31      32     */
+                                  500000, 550000, 600000, 650000, 700000, 750000, 800000, 850000, 900000, 950000,
+                                /* 33         34       35      36       37        38      39        40      41       42   */
+                                  1000000, 1100000, 1200000, 1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000,
+                                /*    43       44     45       46         47      48      49       50(MAX)  */
+                                  2000000, 2100000, 2200000, 2300000, 2400000, 2500000, 2600000, 3000000
+                               };
+
+    // выдаем опыт для ранга и за что был получен
+    void RewardRankPoints(uint32 /*amount*/, int /*source*/);
+    // сколько опыта осталось до след ранга
+    uint32 PointsUntilNextRank();
+    // набрал необходимое количество опыта для ранга или нет
+    bool CanRankUp();
+    // показывает какой ранг у игрока в зависимости от опыта
+    int GetRankByExp();
+    // проверка при входе в игру (если в друг ранг пропал)
+    void RankControlOnLogin();
+    // при получение необходимого опыта выдаем ранг
+    void RewardPvPRank();
+    // награда в виде голды
+    void RewardRankMoney(uint8 /*type*/, uint32 /*money*/, bool win = true);
+    // инфа при входе в игру скоколько опыта и какой ранг
+    void LoadPvPRank();
+    // награда очки арены
+    void RewardArenaPoints(uint32 /*rate*/, int8 /*type*/, bool /*win*/);
+
+    /* выдача баффов в инстах  */
+    void GetRangBuffInInstance(int /*amount*/);
+    void RemoveRankBuff();
+    void VerifiedRankBuff(Map* /*map*/);  
+
+    // Кап арены за день
+    uint32 ReturnCapArenaPerDays();
+    // проверка на выдачи арены или нет за победу или поражение
+    bool AcceptArenaToday(); 
+
     // Settings
     [[nodiscard]] PlayerSetting GetPlayerSetting(std::string source, uint8 index);
     void UpdatePlayerSetting(std::string source, uint8 index, uint32 value);
@@ -2874,6 +2945,11 @@ public:
 
     uint8 m_grantableLevels;
 
+    // опыт для ранга
+    uint32 m_rankPoints; 
+    // сап арены в день
+    uint32 m_todayArena;  
+
     bool m_needZoneUpdate;
 
 private:
@@ -2924,6 +3000,8 @@ private:
     bool m_bHasDelayedTeleport;
     bool m_canTeleport;
     bool m_canKnockback;
+
+    bool m_deathmatch;
 
     std::unique_ptr<PetStable> m_petStable;
 

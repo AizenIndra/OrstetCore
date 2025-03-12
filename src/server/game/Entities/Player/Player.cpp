@@ -38,6 +38,7 @@
 #include "Config.h"
 #include "CreatureAI.h"
 #include "DatabaseEnv.h"
+#include "DeathMatch.h"
 #include "DisableMgr.h"
 #include "Formulas.h"
 #include "GameEventMgr.h"
@@ -73,6 +74,7 @@
 #include "SpellMgr.h"
 #include "StringConvert.h"
 #include "TicketMgr.h"
+#include "Translate.h"
 #include "Tokenize.h"
 #include "Transport.h"
 #include "UpdateData.h"
@@ -88,6 +90,7 @@
 //  there is probably some underlying problem with imports which should properly addressed
 //  see: https://github.com/azerothcore/azerothcore-wotlk/issues/9766
 #include "GridNotifiersImpl.h"
+#include "../../../scripts/Custom/ServerMenu/ServerMenuMgr.h"
 
 enum CharacterFlags
 {
@@ -268,6 +271,14 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
     _innTriggerId = 0;
     _restBonus = 0;
     _restFlagMask = 0;
+
+
+    ////////////////////Rank System/////////////////////
+    m_rankPoints = 0;
+
+    ////////////////////Arena Cap System/////////////////////
+    m_todayArena = 0;
+
     ////////////////////Rest System/////////////////////
 
     m_mailsUpdated = false;
@@ -280,6 +291,10 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 
     for (uint8 i = 0; i < MAX_MOVE_TYPE; ++i)
         m_forced_speed_changes[i] = 0;
+
+    /////////////////// DeathMatch /////////////////
+
+    m_deathmatch            = false;        
 
     /////////////////// Instance System /////////////////////
 
@@ -746,7 +761,7 @@ void Player::StopMirrorTimer(MirrorTimerType Type)
 bool Player::IsImmuneToEnvironmentalDamage()
 {
     // check for GM and death state included in isAttackableByAOE
-    return (!isTargetableForAttack(false, nullptr)) || isTotalImmune();
+    return (!isTargetableForAttack(false, nullptr));
 }
 
 uint32 Player::EnvironmentalDamage(EnviromentalDamage type, uint32 damage)
@@ -3989,6 +4004,7 @@ void Player::DeleteFromDB(ObjectGuid::LowType lowGuid, uint32 accountId, bool up
     RemovePetitionsAndSigns(playerGuid, 10);
 
     CharacterDatabasePreparedStatement* stmt = nullptr;
+    LoginDatabasePreparedStatement* LoginStmt = nullptr;
 
     switch (charDelete_method)
     {
@@ -4265,11 +4281,18 @@ void Player::DeleteFromDB(ObjectGuid::LowType lowGuid, uint32 accountId, bool up
                 stmt->SetData(0, lowGuid);
                 trans->Append(stmt);
 
+                LoginDatabaseTransaction LoginTrans = LoginDatabase.BeginTransaction();
+                LoginStmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_REALM_CHARACTERS);
+                LoginStmt->SetData(0, accountId);
+                LoginStmt->SetData(1, realm.Id.Realm);
+                LoginTrans->Append(LoginStmt);
+
                 Corpse::DeleteFromDB(playerGuid, trans);
 
                 sScriptMgr->OnDeleteFromDB(trans, lowGuid);
 
                 CharacterDatabase.CommitTransaction(trans);
+                LoginDatabase.CommitTransaction(LoginTrans);
                 break;
             }
         // The character gets unlinked from the account, the name gets freed up and appears as deleted ingame
@@ -4366,6 +4389,12 @@ void Player::SetMovement(PlayerMovementType pType)
 */
 void Player::BuildPlayerRepop()
 {
+    if (IsDeathMatch())
+    {
+        DeathMatchMgr->RevivePlayer(this);
+        return;
+    }
+
     WorldPacket data(SMSG_PRE_RESURRECT, GetPackGUID().size());
     data << GetPackGUID();
     GetSession()->SendPacket(&data);
@@ -4865,6 +4894,11 @@ void Player::RepopAtGraveyard()
     // note: this can be called also when the player is alive
     // for example from WorldSession::HandleMovementOpcodes
 
+    if (IsDeathMatch()) {
+        DeathMatchMgr->RevivePlayer(this);
+        return;
+    }
+
     AreaTableEntry const* zone = sAreaTableStore.LookupEntry(GetAreaId());
 
     if (!sScriptMgr->CanRepopAtGraveyard(this))
@@ -4887,6 +4921,21 @@ void Player::RepopAtGraveyard()
     {
         if (sBattlefieldMgr->GetBattlefieldToZoneId(GetZoneId()))
             ClosestGrave = sBattlefieldMgr->GetBattlefieldToZoneId(GetZoneId())->GetClosestGraveyard(this);
+        else if (GetZoneId() == 618 || GetAreaId() == 11 || GetAreaId() == 1 || GetMapId() == 44) {
+            /* дуэль зона */
+            if (GetZoneId() == 618)
+                TeleportTo(1, 5209.53f, -4816.09f, 702.0f, 0.55f);
+            
+            if (GetAreaId() == 11 || GetAreaId() == 1)
+                TeleportTo(0, -4176.85f, -1401.07f, 200.5f, 0.03f);
+
+            if (GetMapId() == 44)
+                TeleportTo(44, 125.49f, 10.91f, 18.8f, 6.27f);
+                
+            ResurrectPlayer(1.0f);
+            SpawnCorpseBones();
+            return;
+        }
         else
             ClosestGrave = sGraveyard->GetClosestGraveyard(this, GetTeamId());
     }
@@ -6144,6 +6193,13 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool awar
     }
 
     honor_f *= sWorld->getRate(RATE_HONOR);
+
+    if (sServerMenuMgr->isDoubleDays())
+        honor_f *= 1.25f;    
+
+    if (GetSession()->IsPremium())
+        honor_f *= sWorld->getRate(RATE_HONOR_PREMIUM);
+
     // Back to int now
     honor = int32(honor_f);
     // honor - for show honor points in log
@@ -6201,6 +6257,13 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool awar
         }
     }
 
+    /* rank system */
+    if (sWorld->getBoolConfig(CONFIG_RANK_SYSTEM_WIN_ENABLE)) {
+        RewardRankPoints(sWorld->getIntConfig(CONFIG_RANK_SYSTEM_KILL_RATE_BG), PVP_KILL);
+        RewardRankMoney(6/*килл*/, sWorld->getIntConfig(CONFIG_RANK_SYSTEM_KILL_RATE_BG));
+        if (GetQuestStatus(26039) == QUEST_STATUS_INCOMPLETE)
+            KilledMonsterCredit(200004);
+    }
     return true;
 }
 
@@ -11324,6 +11387,12 @@ bool Player::CanJoinToBattleground() const
     if (HasAura(26013))
         return false;
 
+    if (IsDeathMatch())
+        return false;
+
+    if (InBattlegroundQueueForBattlegroundQueueType(BATTLEGROUND_QUEUE_5v5))
+        return false;        
+
     return true;
 }
 
@@ -12123,6 +12192,12 @@ void Player::ResetDailyQuestStatus()
     // DB data deleted in caller
     m_DailyQuestChanged = false;
     m_lastDailyQuestTime = 0;
+}
+
+void Player::ResetDailyArenaCapStatus()
+{
+    // если игрок в онлайне
+    SetArenaCapToday(0);
 }
 
 void Player::ResetWeeklyQuestStatus()
@@ -13619,7 +13694,8 @@ bool Player::canFlyInZone(uint32 mapid, uint32 zone, SpellInfo const* bySpell)
 
 void Player::learnSpellHighRank(uint32 spellid)
 {
-    learnSpell(spellid);
+    if (!HasSpell(spellid))
+        learnSpell(spellid);
 
     if (uint32 next = sSpellMgr->GetNextSpellInChain(spellid))
         learnSpellHighRank(next);
@@ -13834,6 +13910,9 @@ void Player::HandleFall(MovementInfo const& movementInfo)
                 // Gust of Wind
                 if (HasAura(43621))
                     damage = GetMaxHealth() / 2;
+
+                if (IsDeathMatch())
+                    damage = 0;    
 
                 // Divine Protection
                 if (HasAura(498))
@@ -14761,6 +14840,8 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
         stmt->SetData(index++, m_extraBonusTalentCount);
+        stmt->SetData(index++, m_rankPoints);
+        stmt->SetData(index++, m_todayArena);
     }
     else
     {
@@ -14901,6 +14982,8 @@ void Player::_SaveCharacter(bool create, CharacterDatabaseTransaction trans)
         stmt->SetData(index++, m_grantableLevels);
         stmt->SetData(index++, _innTriggerId);
         stmt->SetData(index++, m_extraBonusTalentCount);
+        stmt->SetData(index++, GetRankPoints());
+        stmt->SetData(index++, GetArenaCapToday());
 
         stmt->SetData(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
         // Index
@@ -16271,6 +16354,278 @@ std::string Player::GetPlayerName()
     }
 
     return "|Hplayer:" + name + "|h" + color + name + "|h|r";
+}
+
+uint32 Player::ReturnCapArenaPerDays()
+{
+    return this->GetSession()->IsPremium() ? sWorld->getIntConfig(CONFIG_ARENA_CAP_PER_DAYS) * 2 : sWorld->getIntConfig(CONFIG_ARENA_CAP_PER_DAYS);
+}
+
+bool Player::AcceptArenaToday()
+{
+    if (GetArenaCapToday() >= ReturnCapArenaPerDays()) {
+        ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_REWARD_ARENA_POINTS_CAP, EN_REWARD_ARENA_POINTS_CAP));
+        return true;
+    }
+    return false;    
+}
+
+void Player::RewardRankPoints(uint32 amount, int source)
+ {
+    /* если уже максимальный ранг */
+    if (GetRankPoints() >= pvp_rang_points[49])
+        return;
+    
+    if (sServerMenuMgr->isDoubleDays())
+        amount *= 1.25f;
+
+    if (GetSession()->IsPremium())
+        amount *= sWorld->getRate(RATE_RANK_REWARD_PREMIUM);    
+
+    if ((GetRankPoints() + amount) >= 0) {
+        SetRankPoints(GetRankPoints() + amount);
+    }
+
+    char const* rankInfo;
+    switch (source)
+    {
+        case PVP_HK:          rankInfo = GetCustomText(this, RU_glory_win_1, EN_glory_win_1);   break;
+        case PVP_BG:          rankInfo = GetCustomText(this, RU_glory_win_2, EN_glory_win_2);   break;
+        case PVP_ARENA:       rankInfo = GetCustomText(this, RU_glory_win_3, EN_glory_win_3);   break;
+        case PVP_QUEST:       rankInfo = GetCustomText(this, RU_glory_win_7, EN_glory_win_7);   break;
+        case PVP_ITEM:        rankInfo = GetCustomText(this, RU_glory_win_8, EN_glory_win_8);   break;
+        case PVP_KILL:        rankInfo = GetCustomText(this, RU_glory_win_11, EN_glory_win_11); break;
+        case PVE_ACHIV:       rankInfo = GetCustomText(this, RU_glory_win_12, EN_glory_win_12); break;
+        case EXCHANGER_HONOR: rankInfo = GetCustomText(this, RU_glory_win_14, EN_glory_win_14); break;
+        case EVENT_REWARD:    rankInfo = GetCustomText(this, RU_glory_win_15, EN_glory_win_15); break;
+        case KILL_BOSS:       rankInfo = GetCustomText(this, RU_glory_win_16, EN_glory_win_16); break;
+        default:              rankInfo = GetCustomText(this, RU_glory_win_4, EN_glory_win_4);   break;
+    }
+
+    if (!CanRankUp()) {
+        ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_glory_win_5, EN_glory_win_5), amount, rankInfo, PointsUntilNextRank());
+    }
+}
+
+void Player::RewardRankMoney(uint8 type, uint32 money, bool win)
+{
+    /* если у игрока буст коефицент получение уже 2 */
+    /*if (HaveBoostMoney())
+        geter *= 2; */
+
+    money = win ? money : money / 2;
+    uint32 geter = win ? money * 10000 : money * 5000;
+
+     /* сообщение о награде */
+    std::stringstream type_announce;
+    type_announce << "|TInterface\\GossipFrame\\Battlemastergossipicon:15:15:|t|cffff9933 ";
+
+    switch (type) {
+        case 1: /* Задание */
+            type_announce << static_cast<char const*>(GetCustomText(this, RU_MRQW, EN_MRQW));
+            break;
+        case 2: /* Арена 2на2 */
+            type_announce << static_cast<char const*>(GetCustomText(this, win ? RU_MR2W : RU_MR2E, win ? EN_MR2W : EN_MR2E));
+            break;
+        case 3: /* Арена 3на3 */
+            type_announce << static_cast<char const*>(GetCustomText(this, win ? RU_MR3W : RU_MR3E, win ? EN_MR3W : EN_MR3E));
+            break;
+        case 4: /* Бг */
+            type_announce << static_cast<char const*>(GetCustomText(this, win ? RU_MRBGW : RU_MRBGE, win ? EN_MRBGW : EN_MRBGE));
+            break;
+        case 5: /* Арена 1на1 или 5на5 */
+            type_announce << static_cast<char const*>(GetCustomText(this, win ? RU_MR1W : RU_MR1E, win ? EN_MR1W : EN_MR1E));
+            break;
+        case 6: /* убийство на бг */
+            type_announce << static_cast<char const*>(GetCustomText(this, RU_MRKILL, EN_MRKILL));
+            break;
+        default:
+            break;
+    }
+    /* выдача награды */
+    ModifyMoney(geter);
+    /* анонс о выдачи награды */
+    ChatHandler(GetSession()).PSendSysMessage(type_announce.str().c_str(), money);
+}
+
+bool Player::CanRankUp()
+{
+    uint8 i = 0; /* считаем ранги */
+    bool yes = false; /* проверка для повышение ранга */
+
+    while ((yes == false) && (i < 50))
+    {
+        if (GetRankPoints() >= pvp_rang_points[i] && GetAuraCount(RANKSYSTEMID) < i+1)
+        {
+            RewardPvPRank();
+            yes = true;
+        }
+        else
+            i++;
+    }
+    if (yes)
+        return true;
+    return false;
+}
+
+int Player::GetRankByExp()
+{
+    /* максимальный ранг */
+    if (GetRankPoints() >= pvp_rang_points[49])
+        return 50;
+
+    /* минимальный ранг (чтобы не заходить в while) */
+    if (GetRankPoints() < pvp_rang_points[0])
+        return 0;
+
+    uint8 i = 0;
+    while (GetRankPoints() >= pvp_rang_points[i]) {
+        i++;
+    }
+    return i;
+}
+
+void Player::RankControlOnLogin()
+{
+    /* если все в порядке */
+    if (GetRankByExp() == static_cast<int>(GetAuraCount(RANKSYSTEMID)))
+        return;
+
+    RemoveAura(RANKSYSTEMID);
+    for (int i = 0; i < GetRankByExp(); i++) {
+        AddAura(RANKSYSTEMID, this);
+    }
+    SaveToDB(false, false);
+}
+
+void Player::GetRangBuffInInstance(int amount)
+{
+    amount = this->GetSession()->IsPremium() ? amount : amount / 2;
+    for (int i = 0; i < amount; i++) {
+        AddAura(62519, this); /* лечение +8% */
+        AddAura(66721, this); /* урон +5% */
+    }
+}
+
+void Player::RemoveRankBuff() {
+    if (HasAura(62519))
+        RemoveAura(62519); /* лечение +8% */
+    if (HasAura(66721))
+        RemoveAura(66721); /* урон +5% */
+    if (HasAura(41107))
+        RemoveAura(41107); /* берсерк 25% */   
+}
+
+void Player::VerifiedRankBuff(Map* map)
+{
+    if (map->IsRaid() || map->IsDungeon()) {
+        if (!HasAura(62519) && !HasAura(66721))
+            GetRangBuffInInstance(GetRankByExp());
+        else {
+            if (this->GetSession()->IsPremium()) {
+                if (GetAuraCount(62519) != uint32(GetRankByExp())) {
+                    RemoveRankBuff();
+                    GetRangBuffInInstance(GetRankByExp());
+                }               
+            }
+            else if (GetAuraCount(62519)*2 != uint32(GetRankByExp())) {
+                RemoveRankBuff();
+                GetRangBuffInInstance(GetRankByExp());
+            }
+        }
+    }
+    else
+        RemoveRankBuff();
+}
+
+void Player::RewardPvPRank(/*int rank*/)
+{
+    /* выдаем ауру */
+    AddAura(RANKSYSTEMID, this);
+    /* нотификация игроку */
+    CastSpell(this, 47292, true);
+    /* инфа */
+    ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_glory_win_13, EN_glory_win_13));
+    /* выдаем бафф если игрок в инсте */
+    VerifiedRankBuff(GetMap());
+    /* сохраняем */
+    SaveToDB(false, false);
+}
+
+uint32 Player::PointsUntilNextRank()
+{
+    uint8 i = 0;
+    bool yes = false;
+
+    while ((yes == false) && i <= 50)
+    {
+        if (GetRankPoints() < pvp_rang_points[i])
+        {
+            yes = true;
+             return pvp_rang_points[i] - GetRankPoints();
+        }
+        else
+           i++;
+    }
+    return 0;
+}
+
+void Player::LoadPvPRank()
+{
+    if (GetAuraCount(RANKSYSTEMID) < 50)
+        ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_glory_win_6, EN_glory_win_6), GetRankPoints(), GetRankByExp(), PointsUntilNextRank());
+    else
+        ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_glory_win_10, EN_glory_win_10));
+}
+
+void Player::RewardArenaPoints(uint32 rate, int8 type, bool win)
+{
+    if (!type || !rate)
+        return;
+
+    // если у игрока рейтинг меньше чем 50
+    if (rate < 50)
+        rate = 50;
+
+    uint32 arena = uint32((rate / 50) + GetRankByExp());
+    if (arena < 0)
+        arena = 0;
+
+    // если поражение то даем в 2 раза меньше
+    if (!win)
+        arena /= 2;
+
+    if (AcceptArenaToday())
+        return;
+
+    // бонусы от арены 2на2 и 3на3
+    arena += type == ARENA_TYPE_2v2 ? 5 : type == ARENA_TYPE_3v3 ? 10 : 0;
+
+    if ((this->GetArenaCapToday() + arena) > ReturnCapArenaPerDays()) {
+        arena = this->ReturnCapArenaPerDays() - this->GetArenaCapToday();
+    }
+
+    // записываем в кап
+    this->SetArenaCapToday(this->GetArenaCapToday() + arena);
+
+    switch (type) {
+        case ARENA_TYPE_2v2: 
+        {
+            this->ModifyArenaPoints(arena);
+            ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, win ? RU_REWARD_ARENA_POINTS_WIN : RU_REWARD_ARENA_POINTS_LOOS, win ? EN_REWARD_ARENA_POINTS_WIN : EN_REWARD_ARENA_POINTS_LOOS), arena);
+        } break;
+        case ARENA_TYPE_3v3: 
+        {
+            this->ModifyArenaPoints(arena);
+            ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, win ? RU_REWARD_ARENA_POINTS_WIN : RU_REWARD_ARENA_POINTS_LOOS, win ? EN_REWARD_ARENA_POINTS_WIN : EN_REWARD_ARENA_POINTS_LOOS), arena);
+        } break;
+        case ARENA_TYPE_5v5:
+        {
+            this->ModifyArenaPoints(arena);
+            ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, win ? RU_REWARD_ARENA_POINTS_WIN : RU_REWARD_ARENA_POINTS_LOOS, win ? EN_REWARD_ARENA_POINTS_WIN : EN_REWARD_ARENA_POINTS_LOOS), arena);
+        } break;
+        default: break;
+    }
 }
 
 void Player::SetSummonPoint(uint32 mapid, float x, float y, float z, uint32 delay /*= 0*/, bool asSpectator /*= false*/)

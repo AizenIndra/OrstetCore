@@ -17,6 +17,7 @@
 
 #include "Battlefield.h"
 #include "BattlefieldMgr.h"
+#include "BattlefieldWG.h"
 #include "CellImpl.h"
 #include "CreatureTextMgr.h"
 #include "GameGraveyard.h"
@@ -37,6 +38,7 @@
 //  there is probably some underlying problem with imports which should properly addressed
 //  see: https://github.com/azerothcore/azerothcore-wotlk/issues/9766
 #include "GridNotifiersImpl.h"
+#include <Chat.h>
 
 Battlefield::Battlefield()
 {
@@ -63,6 +65,8 @@ Battlefield::Battlefield()
 
     m_LastResurectTimer = RESURRECTION_INTERVAL;
     m_StartGroupingTimer = 0;
+    m_StartGroupingTimerAnnounce = 0;
+    m_StartAnnounce5min = false;
     m_StartGrouping = false;
 }
 
@@ -167,6 +171,13 @@ bool Battlefield::Update(uint32 diff)
         m_StartGrouping = true;
         InvitePlayersInZoneToQueue();
         OnStartGrouping();
+    }
+
+    if(!IsWarTime() && m_StartGrouping && !m_StartAnnounce5min && m_Timer <= m_StartGroupingTimerAnnounce)
+    {
+        m_StartAnnounce5min = true;
+        ChatHandler(nullptr).SendWorldText(BATTLEFIELD_WG_WORLD_START_MESSAGE_5MIN);
+        m_StartGroupingTimerAnnounce = 5000;
     }
 
     bool objective_changed = false;
@@ -360,6 +371,7 @@ void Battlefield::EndBattle(bool endByTimer)
         return;
 
     m_isActive = false;
+    m_StartAnnounce5min = false;
 
     m_StartGrouping = false;
 

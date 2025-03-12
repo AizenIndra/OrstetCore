@@ -103,8 +103,8 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion,
-    time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool skipQueue, uint32 TotalTime, bool isBot) :
+WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, bool ispremium, uint8 expansion,
+    time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool skipQueue, uint32 TotalTime, uint32 Bonuses, bool Autobroadcast, bool isBot) :
     m_muteTime(mute_time),
     m_timeOutTime(0),
     _lastAuctionListItemsMSTime(0),
@@ -114,11 +114,14 @@ WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldS
     _player(nullptr),
     m_Socket(sock),
     _security(sec),
+    _ispremium(ispremium),
     _skipQueue(skipQueue),
     _accountId(id),
     _accountName(std::move(name)),
     m_expansion(expansion),
     m_total_time(TotalTime),
+    m_bonuses(Bonuses),
+    m_autobroadcast(Autobroadcast),
     _logoutTime(0),
     m_inQueue(false),
     m_playerLoading(false),
@@ -162,7 +165,7 @@ WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldS
 /// WorldSession destructor
 WorldSession::~WorldSession()
 {
-    LoginDatabase.Execute("UPDATE account SET totaltime = {} WHERE id = {}", GetTotalTime(), GetAccountId());
+    LoginDatabase.Execute("UPDATE account SET totaltime = {}, bonuses = {}, autobroadcast = {} WHERE id = {}", GetTotalTime(), GetBonuses(), GetAutobroadcast(), GetAccountId());
 
     ///- unload player if not unloaded
     if (_player)
@@ -186,6 +189,23 @@ WorldSession::~WorldSession()
 bool WorldSession::IsGMAccount() const
 {
     return GetSecurity() >= SEC_GAMEMASTER;
+}
+
+void WorldSession::SetBonuses(uint32 Bonuses)
+{
+    m_bonuses = Bonuses;
+    LoginDatabasePreparedStatement* tm = LoginDatabase.GetPreparedStatement(LOGIN_UPD_ACCOUNT_BONUSES);
+    tm->SetData(0, Bonuses);
+    tm->SetData(1, GetAccountId());
+    LoginDatabase.Execute(tm);    
+}
+
+void WorldSession::SetAutobroadcast(bool enable) {
+    m_autobroadcast = enable;
+    LoginDatabasePreparedStatement* tm = LoginDatabase.GetPreparedStatement(LOGIN_UPD_AUTO_BROADCAST);
+    tm->SetData(0, enable);
+    tm->SetData(1, GetAccountId()); 
+    LoginDatabase.Execute(tm); 
 }
 
 std::string const& WorldSession::GetPlayerName() const

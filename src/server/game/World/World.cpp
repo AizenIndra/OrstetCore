@@ -125,6 +125,7 @@ World::World()
     _playerCount = 0;
     _maxPlayerCount = 0;
     _nextDailyQuestReset = 0s;
+    _NextDailyArenaCapReset = 0s;
     _nextWeeklyQuestReset = 0s;
     _nextMonthlyQuestReset = 0s;
     _nextRandomBGReset = 0s;
@@ -564,6 +565,10 @@ void World::LoadConfigSettings(bool reload)
     _rate_values[RATE_HONOR]                                = sConfigMgr->GetOption<float>("Rate.Honor", 1.0f);
     _rate_values[RATE_ARENA_POINTS]                         = sConfigMgr->GetOption<float>("Rate.ArenaPoints", 1.0f);
     _rate_values[RATE_INSTANCE_RESET_TIME]                  = sConfigMgr->GetOption<float>("Rate.InstanceResetTime", 1.0f);
+ 
+    /* Vip аккаунт */
+    _rate_values[RATE_HONOR_PREMIUM]                        = sConfigMgr->GetOption<float>("Rate.Honor.Premium", 2.0f);
+    _rate_values[RATE_RANK_REWARD_PREMIUM]                  = sConfigMgr->GetOption<float>("Rate.Rank.Premium", 2.0f);
 
     _rate_values[RATE_MISS_CHANCE_MULTIPLIER_TARGET_CREATURE]       = sConfigMgr->GetOption<float>("Rate.MissChanceMultiplier.TargetCreature", 11.0f);
     _rate_values[RATE_MISS_CHANCE_MULTIPLIER_TARGET_PLAYER]         = sConfigMgr->GetOption<float>("Rate.MissChanceMultiplier.TargetPlayer", 7.0f);
@@ -1183,8 +1188,11 @@ void World::LoadConfigSettings(bool reload)
     _float_configs[CONFIG_ARENA_LOSE_RATING_MODIFIER]               = sConfigMgr->GetOption<float>("Arena.ArenaLoseRatingModifier", 24.0f);
     _float_configs[CONFIG_ARENA_MATCHMAKER_RATING_MODIFIER]         = sConfigMgr->GetOption<float>("Arena.ArenaMatchmakerRatingModifier", 24.0f);
     _bool_configs[CONFIG_ARENA_QUEUE_ANNOUNCER_ENABLE]              = sConfigMgr->GetOption<bool>("Arena.QueueAnnouncer.Enable", false);
+    _bool_configs[CONFIG_ARENA_LEAVE_ANNOUNCER_ENABLE]              = sConfigMgr->GetOption<bool>("Arena.LeaveAnnouncer.Enable", false);
     _bool_configs[CONFIG_ARENA_QUEUE_ANNOUNCER_PLAYERONLY]          = sConfigMgr->GetOption<bool>("Arena.QueueAnnouncer.PlayerOnly", false);
     _int_configs[CONFIG_ARENA_QUEUE_ANNOUNCER_DETAIL]               = sConfigMgr->GetOption<uint32>("Arena.QueueAnnouncer.Detail", 3);
+
+    _bool_configs[CONFIG_ARENA_DEMENTIA_ENABLED]                    = sConfigMgr->GetOption<bool>("Arena.AntiDraw.Enabled", true);
 
     _bool_configs[CONFIG_OFFHAND_CHECK_AT_SPELL_UNLEARN]            = sConfigMgr->GetOption<bool>("OffhandCheckAtSpellUnlearn", true);
     _int_configs[CONFIG_CREATURE_STOP_FOR_PLAYER]                   = sConfigMgr->GetOption<uint32>("Creature.MovingStopTimeForPlayer", 3 * MINUTE * IN_MILLISECONDS);
@@ -1444,8 +1452,17 @@ void World::LoadConfigSettings(bool reload)
     _int_configs[CONFIG_BG_REWARD_WINNER_ARENA_LAST]  = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerArenaLast", 0);
     _int_configs[CONFIG_BG_REWARD_LOSER_HONOR_FIRST]  = sConfigMgr->GetOption<int32>("Battleground.RewardLoserHonorFirst", 5);
     _int_configs[CONFIG_BG_REWARD_LOSER_HONOR_LAST]   = sConfigMgr->GetOption<int32>("Battleground.RewardLoserHonorLast", 5);
+ 
+    // arena cap today
+    _int_configs[CONFIG_ARENA_CAP_PER_DAYS]           = sConfigMgr->GetOption<int32>("Arena.CapPerDay", 400);
 
     _int_configs[CONFIG_WAYPOINT_MOVEMENT_STOP_TIME_FOR_PLAYER] = sConfigMgr->GetOption<int32>("WaypointMovementStopTimeForPlayer", 120);
+ 
+    // rank system
+    _bool_configs[CONFIG_RANK_SYSTEM_WIN_ENABLE]      = sConfigMgr->GetOption<bool>("RankSystem.RewardWinArenaEnable", true);
+    _int_configs[CONFIG_RANK_SYSTEM_WIN_RATE_ARENA]   = sConfigMgr->GetOption<int32>("RankSystem.RewardWinArena", 25);
+    _int_configs[CONFIG_RANK_SYSTEM_WIN_RATE_BG]      = sConfigMgr->GetOption<int32>("RankSystem.RewardWinBG", 150);
+    _int_configs[CONFIG_RANK_SYSTEM_KILL_RATE_BG]     = sConfigMgr->GetOption<int32>("RankSystem.RewardKillBG", 10);
 
     _int_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PRINT_MODE]              = sConfigMgr->GetOption<int32>("DungeonAccessRequirements.PrintMode", 1);
     _bool_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PORTAL_CHECK_ILVL]      = sConfigMgr->GetOption<bool>("DungeonAccessRequirements.PortalAvgIlevelCheck", false);
@@ -1997,6 +2014,10 @@ void World::SetInitialWorldSettings()
     CharacterDatabase.Execute("DELETE mi FROM mail_items mi LEFT JOIN item_instance ii ON mi.item_guid = ii.guid WHERE ii.guid IS NULL");
     CharacterDatabase.Execute("DELETE mi FROM mail_items mi LEFT JOIN mail m ON mi.mail_id = m.id WHERE m.id IS NULL");
     CharacterDatabase.Execute("UPDATE mail m LEFT JOIN mail_items mi ON m.id = mi.mail_id SET m.has_items=0 WHERE m.has_items<>0 AND mi.mail_id IS NULL");
+    
+    LOG_INFO("server.loading", "Deleting deserter for all players...");
+    LOG_INFO("server.loading", " ");
+    CharacterDatabase.Execute("DELETE FROM character_aura WHERE spell = {} AND remainTime <= 1800000", 26013);
 
     ///- Handle outdated emails (delete/return)
     LOG_INFO("server.loading", "Returning Old Mails...");
@@ -2125,6 +2146,9 @@ void World::SetInitialWorldSettings()
 
     LOG_INFO("server.loading", "Calculate Next Daily Quest Reset Time...");
     InitDailyQuestResetTime();
+ 
+    LOG_INFO("server.loading", "Calculate next daily arena cap reset time...");
+    InitDailyArenaCapResetTime();    
 
     LOG_INFO("server.loading", "Calculate Next Weekly Quest Reset Time..." );
     InitWeeklyQuestResetTime();
@@ -2289,6 +2313,11 @@ void World::Update(uint32 diff)
         if (currentGameTime > _nextDailyQuestReset)
         {
             ResetDailyQuests();
+        }
+
+        if (currentGameTime > _NextDailyArenaCapReset)
+        {
+            ResetDailyArenaCap();
         }
 
         /// Handle weekly quests reset time
@@ -2957,6 +2986,17 @@ void World::InitDailyQuestResetTime()
     }
 }
 
+void World::InitDailyArenaCapResetTime()
+{
+    Seconds wstime = Seconds(sWorld->getWorldState(WS_DAYLY_ARENA_POINTS_CAP));
+    _NextDailyArenaCapReset = wstime > 0s ? wstime : Seconds(Acore::Time::GetNextTimeWithDayAndHour(-1, 6));
+
+    if (wstime == 0s)
+    {
+        sWorld->setWorldState(WS_DAYLY_ARENA_POINTS_CAP, _NextDailyArenaCapReset.count());
+    }    
+}
+
 void World::InitMonthlyQuestResetTime()
 {
     Seconds wstime = Seconds(sWorld->getWorldState(WS_MONTHLY_QUEST_RESET_TIME));
@@ -3015,6 +3055,19 @@ void World::ResetDailyQuests()
 
     // change available dailies
     sPoolMgr->ChangeDailyQuests();
+}
+
+void World::ResetDailyArenaCap()
+{
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_ARENA_CAP_DAILY);
+    CharacterDatabase.Execute(stmt);
+
+    for (SessionMap::const_iterator itr = _sessions.begin(); itr != _sessions.end(); ++itr)
+        if (itr->second->GetPlayer())
+            itr->second->GetPlayer()->ResetDailyArenaCapStatus();
+
+    _NextDailyArenaCapReset = Seconds(Acore::Time::GetNextTimeWithDayAndHour(-1, 6));
+    sWorld->setWorldState(WS_DAYLY_ARENA_POINTS_CAP, _NextDailyArenaCapReset.count());
 }
 
 void World::LoadDBAllowedSecurityLevel()

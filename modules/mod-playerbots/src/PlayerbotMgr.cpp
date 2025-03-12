@@ -90,8 +90,8 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(PlayerbotLoginQueryHolder con
 
     // At login DBC locale should be what the server is set to use by default (as spells etc are hardcoded to ENUS this
     // allows channels to work as intended)
-    WorldSession* botSession = new WorldSession(botAccountId, "", nullptr, SEC_PLAYER, EXPANSION_WRATH_OF_THE_LICH_KING,
-                                                time_t(0), sWorld->GetDefaultDbcLocale(), 0, false, false, 0, true);
+    WorldSession* botSession = new WorldSession(botAccountId, "", nullptr, SEC_PLAYER, true, EXPANSION_WRATH_OF_THE_LICH_KING,
+                                                time_t(0), sWorld->GetDefaultDbcLocale(), 0, false, false, 0, 0, true);
 
     botSession->HandlePlayerLoginFromDB(holder);  // will delete lqh
 

@@ -20,6 +20,11 @@
 #include "Player.h"
 #include "ScriptedCreature.h"
 #include "Spell.h"
+#include "Translate.h"
+#include "WorldSession.h"
+#include "../Custom/ServerMenu/ServerMenuMgr.h"
+
+#define GetText(a, b, c)    a->GetSession()->GetSessionDbLocaleIndex() == LOCALE_ruRU ? b : c
 
 /*#####
 # item_only_for_flight
@@ -213,6 +218,171 @@ public:
     }
 };
 
+class RandomMorphItem : public ItemScript
+{
+public:
+    RandomMorphItem() : ItemScript("RandomMorphItem") { }
+
+    static constexpr uint32 tab[3] = {29001, 29002, 29003};
+
+    bool OnUse(Player* player, Item* /*item*/, SpellCastTargets const& /*targets*/) override
+    {
+        player->CastSpell(player, urand(tab[0], tab[2]), true);
+        return false;
+    }
+};
+
+class BonusGetOnAccountItem : public ItemScript
+{
+public:
+    BonusGetOnAccountItem() : ItemScript("BonusGetOnAccountItem") { }
+
+    bool OnUse(Player* player, Item* item, SpellCastTargets const& /*targets*/) override
+    {
+        if (!player || !item)
+            return true;
+
+        if (!player->GetSession())
+            return true;    
+            
+        /* ид предмета */
+        uint32 entry = item->GetEntry();
+        /* выводим количество предметов */
+        uint32 count = player->GetItemCount(entry, true);
+        /* выводим бонусы игрока */
+        uint32 bonuses = player->GetSession()->GetBonuses();
+        /* удаляем предметы */
+        player->DestroyItemCount(entry, count, true);
+        /* выдаем бонусы */
+        player->GetSession()->SetBonuses(bonuses + count);
+        /* анонс игроку */
+        ChatHandler(player->GetSession()).PSendSysMessage(GetText(player, RU_GET_BONUS_USE_ITEM, EN_GET_BONUS_USE_ITEM), count);
+        return true;
+    }
+};
+
+class ItemUse_Glory_Exp : public ItemScript
+{
+public:
+    ItemUse_Glory_Exp() : ItemScript("ItemUse_Glory_Exp") { }
+
+    bool OnUse(Player* pPlayer, Item* pItem, const SpellCastTargets& /*pTargets*/) override
+    {
+        if (!pPlayer || !pItem)
+            return true;
+
+        if (pPlayer->GetAuraCount(71201) >= 50)
+            return true;            
+
+        uint32 entry = pItem->GetEntry();
+        uint32 rate = 0;
+
+        if (pPlayer->GetAuraCount(71201) < 50) {
+            switch (entry) {
+                case 1042:
+                    rate = 50;
+                    break;
+                case 1043:
+                    rate = 100;
+                    break;
+                case 1044:
+                    rate = 250;
+                    break;
+                case 35778:
+                    rate = 1000;
+                    break;
+                case 842:
+                    rate = 5000;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (rate != 0)
+        {
+            pPlayer->DestroyItemCount(entry,1,true);
+            pPlayer->RewardRankPoints(rate, 4);
+        }
+        else
+            ChatHandler(pPlayer->GetSession()).PSendSysMessage(GetText(pPlayer,"Вам нужен более высокий ранг для использование данного предмета.","You need a higher rank to use this item."));
+        return true;
+    }
+};
+
+class PremiumItemGetter : public ItemScript
+{
+public:
+    PremiumItemGetter() : ItemScript("PremiumItemGetter") { }
+
+    bool OnUse(Player* pPlayer, Item* pItem, const SpellCastTargets& /*pTargets*/) override
+    {
+        if (!pPlayer || !pItem)
+            return true;
+
+        if (pPlayer->GetSession()->IsPremium()) {
+            ChatHandler(pPlayer->GetSession()).PSendSysMessage(GetText(pPlayer, 
+            "|TInterface\\GossipFrame\\Battlemastergossipicon:15:15:|t |cffff9933[Премиум Аккаунт]: Дождитеcь окончание премиума перед использованием.", 
+            "|TInterface\\GossipFrame\\Battlemastergossipicon:15:15:|t |cffff9933[Premium Account]: Wait until the end of the premium before using"));
+            return true;
+        }    
+
+        uint32 entry = pItem->GetEntry();
+        uint32 days = 1;
+
+        switch (entry) {
+            // 1 день
+            case 34631: days = 1; break;
+            // 7 дней    
+            case 34632: days = 7; break;
+            // 31 дня
+            case 34633: days = 31; break;
+            default: break;
+        }
+
+        pPlayer->DestroyItemCount(entry, 1, true);
+        sServerMenuMgr->GetVipStatus(pPlayer, days);
+        return true;
+    }
+};
+
+class EventItemReward : public ItemScript
+{
+public:
+    EventItemReward() : ItemScript("EventItemReward") { }
+
+    bool OnUse(Player* pPlayer, Item* pItem, const SpellCastTargets& /*pTargets*/) override
+    {
+        if (!pPlayer || !pItem)
+            return true;
+
+        uint32 entry = pItem->GetEntry();
+        
+        if (!entry)
+            return true;
+
+        uint32 prize = 3;
+        bool bigEvent = false;
+
+        // назначаем ID приза за ивент
+        sServerMenuMgr->SetItemRewardID(entry);            
+
+        switch (entry) {
+            case 34634: bigEvent = true; prize = 1; break;
+            case 34635: bigEvent = true; prize = 2; break;
+            case 34636: bigEvent = true; prize = 3; break;
+            case 34628: bigEvent = false; prize = 1; break;
+            case 34629: bigEvent = false; prize = 2; break;
+            case 20486: /* авто ивент осада столиц */
+            case 34630: bigEvent = false; prize = 3; break;
+            default: break;
+        }
+
+        sServerMenuMgr->GossipMenuEventReward(pPlayer, entry, bigEvent, prize);
+        return true;
+    }
+};
+
 void AddSC_item_scripts()
 {
     new item_only_for_flight();
@@ -222,5 +392,10 @@ void AddSC_item_scripts()
     new item_petrov_cluster_bombs();
     new item_captured_frog();
     new item_generic_limit_chance_above_60();
+    new BonusGetOnAccountItem();
+    new RandomMorphItem();
+    new ItemUse_Glory_Exp();
+    new PremiumItemGetter();
+    new EventItemReward();
 }
 

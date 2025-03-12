@@ -19,12 +19,14 @@
 #include "ArenaTeamMgr.h"
 #include "GroupMgr.h"
 #include "Log.h"
+#include "Chat.h"
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "World.h"
 #include "WorldSession.h"
+#include "Translate.h"
 //#include "WorldStatePackets.h"
 
 void ArenaScore::AppendToPacket(WorldPacket& data)
@@ -343,6 +345,26 @@ void Arena::EndBattleground(TeamId winnerTeamId)
                         player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_RATED_ARENA, rating ? rating : 1);
                         player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_ARENA, GetMapId());
 
+                        
+                        // квест на победу 1на1 - 10 побед
+                        if (GetArenaType() == ARENA_TYPE_5v5) {
+                            if (player->GetQuestStatus(26037) == QUEST_STATUS_INCOMPLETE)
+                                player->KilledMonsterCredit(200001);
+                        }
+                        // квест на победу 2на2 - 10 побед
+                        if (GetArenaType() == ARENA_TYPE_2v2) {
+                            if (player->GetQuestStatus(26038) == QUEST_STATUS_INCOMPLETE ||
+                                player->GetQuestStatus(26052) == QUEST_STATUS_INCOMPLETE)
+                                player->KilledMonsterCredit(200002);   
+                        }
+
+                        player->RewardArenaPoints(winnerArenaTeam->GetRating(), GetArenaType(), true);
+
+                        uint32 RankGetRating = (GetArenaType() == ARENA_TYPE_2v2 ? 3 : GetArenaType() == ARENA_TYPE_5v5 ? 2 : 4)
+                                             * sWorld->getIntConfig(CONFIG_RANK_SYSTEM_WIN_RATE_ARENA);
+                        player->RewardRankPoints(RankGetRating, Player::PVP_BG);
+                        player->RewardRankMoney(GetArenaType(), RankGetRating); 
+
                         // Last standing - Rated 5v5 arena & be solely alive player
                         if (GetArenaType() == ARENA_TYPE_5v5 && aliveWinners == 1 && player->IsAlive())
                         {
@@ -350,14 +372,26 @@ void Arena::EndBattleground(TeamId winnerTeamId)
                         }
 
                         winnerArenaTeam->MemberWon(player, loserMatchmakerRating, winnerMatchmakerChange);
+
                     }
                 }
                 else
                 {
+                    uint32 RankGetRating = (GetArenaType() == ARENA_TYPE_2v2 ? 3 : GetArenaType() == ARENA_TYPE_5v5 ? 2 : 4)
+                                             * sWorld->getIntConfig(CONFIG_RANK_SYSTEM_WIN_RATE_ARENA);
+                    player->RewardRankMoney(GetArenaType(), RankGetRating, false);
+                    player->RewardArenaPoints(loserArenaTeam->GetRating(), GetArenaType(), false);
+
                     loserArenaTeam->MemberLost(player, winnerMatchmakerRating, loserMatchmakerChange);
 
                     // Arena lost => reset the win_rated_arena having the "no_lose" condition
                     player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_CONDITION_NO_LOSE, 0);
+                }
+                
+                // квест на авто ивент 2на2
+                if (GetArenaType() == ARENA_TYPE_2v2) {
+                    if (player->GetQuestStatus(26052) == QUEST_STATUS_INCOMPLETE)
+                        player->KilledMonsterCredit(200005);
                 }
 
                 player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_PLAY_ARENA, GetMapId());
@@ -377,6 +411,37 @@ void Arena::EndBattleground(TeamId winnerTeamId)
 
         loserArenaTeam->SaveToDB();
         loserArenaTeam->NotifyStatsChanged();
+    } else {
+        // skirmish
+        uint8 counter_arena{0}; 
+        std::ostringstream announce_arena;
+        std::ostringstream winner;
+
+        announce_arena << "|TInterface\\GossipFrame\\Battlemastergossipicon:15:15:|t |cffff9933[Турнир]: Завершился бой ";
+
+        for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr) {
+            if (Player* player = itr->second)
+            {
+                auto const& bgTeamId = player->GetBgTeamId();
+
+                if (GetArenaType() == ARENA_TYPE_5v5) {
+                    if (bgTeamId == winnerTeamId)
+                        winner << player->GetName();
+
+                    if (counter_arena == 0) {
+                        announce_arena << "|cffffff4d" << player->GetName() << "|cffff9933 vs |cffffff4d";
+                        counter_arena++;
+                    }
+                    else {
+                        announce_arena << player->GetName() << "|cffff9933 - победил |cffffff4d" << winner.str().c_str() << "|r";
+                        counter_arena++;
+                    }
+                }
+            }
+        }
+        
+        if (counter_arena > 1)
+            ChatHandler(nullptr).SendWorldText(LANG_ARENA_STARTED_CUSTOM, announce_arena.str().c_str());
     }
 
     // end battleground
