@@ -31,39 +31,71 @@ AC_API_EXPORT EnumText EnumUtils<Races>::ToString(Races value)
 {
     switch (value)
     {
-        case RACE_HUMAN: return { "RACE_HUMAN", "Human", "" };
-        case RACE_ORC: return { "RACE_ORC", "Orc", "" };
-        case RACE_DWARF: return { "RACE_DWARF", "Dwarf", "" };
-        case RACE_NIGHTELF: return { "RACE_NIGHTELF", "Night Elf", "" };
-        case RACE_UNDEAD_PLAYER: return { "RACE_UNDEAD_PLAYER", "Undead", "" };
-        case RACE_TAUREN: return { "RACE_TAUREN", "Tauren", "" };
-        case RACE_GNOME: return { "RACE_GNOME", "Gnome", "" };
-        case RACE_TROLL: return { "RACE_TROLL", "Troll", "" };
-        case RACE_BLOODELF: return { "RACE_BLOODELF", "Blood Elf", "" };
-        case RACE_DRAENEI: return { "RACE_DRAENEI", "Draenei", "" };
-        default: throw std::out_of_range("value");
+    case RACE_HUMAN: return { "RACE_HUMAN", "Human", "" };
+    case RACE_ORC: return { "RACE_ORC", "Orc", "" };
+    case RACE_DWARF: return { "RACE_DWARF", "Dwarf", "" };
+    case RACE_NIGHTELF: return { "RACE_NIGHTELF", "Night Elf", "" };
+    case RACE_UNDEAD_PLAYER: return { "RACE_UNDEAD_PLAYER", "Undead", "" };
+    case RACE_TAUREN: return { "RACE_TAUREN", "Tauren", "" };
+    case RACE_GNOME: return { "RACE_GNOME", "Gnome", "" };
+    case RACE_TROLL: return { "RACE_TROLL", "Troll", "" };
+    case RACE_GOBLIN: return { "RACE_GOBLIN", "Goblin", "" };
+    case RACE_BLOODELF: return { "RACE_BLOODELF", "Blood Elf", "" };
+    case RACE_DRAENEI: return { "RACE_DRAENEI", "Draenei", "" };
+    case RACE_WORGEN: return { "RACE_WORGEN", "Worgen", "" };
+    case RACE_PANDAREN: return { "RACE_PANDAREN", "Pandaren", "" };
+    case RACE_VULPERA: return { "RACE_VULPERA", "Vulpera", "" };
+    case RACE_VOIDELF: return { "RACE_VOIDELF", "VoidElf", "" };
+    case RACE_NIGHTBORNE: return { "RACE_NIGHTBORNE", "NightborneElf", "" };
+    case RACE_LIGHTFORGED: return { "RACE_LIGHTFORGED", "Lightforged", "" };
+    case RACE_EREDAR: return { "RACE_EREDAR", "Eredar", "" };
+    case RACE_KULTIRAN: return { "RACE_KULTIRAN", "Kultiran", "" };
+    case RACE_ZANDALARI: return { "RACE_ZANDALARI", "Zandalari", "" };
+    case RACE_DARKIRONDWARF: return { "RACE_DARKIRONDWARF", "Darkirondwarf", "" };
+    case RACE_DRACTHYR: return { "RACE_DRACTHYR", "Dracthyr", "" };
+    case RACE_ILLIDARIA: return { "RACE_ILLIDARIA", "IllidariA", "" };
+    case RACE_ILLIDARIH: return { "RACE_ILLIDARIH", "IllidariH", "" };
+    case RACE_BROKEN: return { "RACE_BROKEN", "Broken", "" };
+    case RACE_MAGHAR: return { "RACE_MAGHAR", "Maghar", "" };
+    default: throw std::out_of_range("value");
     }
 }
 
 template <>
-AC_API_EXPORT std::size_t EnumUtils<Races>::Count() { return 10; }
+AC_API_EXPORT std::size_t EnumUtils<Races>::Count() { return 26; }
 
 template <>
 AC_API_EXPORT Races EnumUtils<Races>::FromIndex(std::size_t index)
 {
     switch (index)
     {
-        case 0: return RACE_HUMAN;
-        case 1: return RACE_ORC;
-        case 2: return RACE_DWARF;
-        case 3: return RACE_NIGHTELF;
-        case 4: return RACE_UNDEAD_PLAYER;
-        case 5: return RACE_TAUREN;
-        case 6: return RACE_GNOME;
-        case 7: return RACE_TROLL;
-        case 8: return RACE_BLOODELF;
-        case 9: return RACE_DRAENEI;
-        default: throw std::out_of_range("index");
+    case 0: return RACE_HUMAN;
+    case 1: return RACE_ORC;
+    case 2: return RACE_DWARF;
+    case 3: return RACE_NIGHTELF;
+    case 4: return RACE_UNDEAD_PLAYER;
+    case 5: return RACE_TAUREN;
+    case 6: return RACE_GNOME;
+    case 7: return RACE_TROLL;
+    case 8: return RACE_GOBLIN;
+    case 9: return RACE_BLOODELF;
+    case 10: return RACE_DRAENEI;
+    case 11: return RACE_WORGEN;
+    case 12: return RACE_PANDAREN;
+    case 13: return RACE_VULPERA;
+    case 14: return RACE_VOIDELF;
+    case 15: return RACE_NIGHTBORNE;
+    case 16: return RACE_LIGHTFORGED;
+    case 17: return RACE_EREDAR;
+    case 18: return RACE_KULTIRAN;
+    case 19: return RACE_ZANDALARI;
+    case 20: return RACE_DARKIRONDWARF;
+    case 21: return RACE_DRACTHYR;
+    case 22: return RACE_ILLIDARIA;
+    case 23: return RACE_ILLIDARIH;
+    case 24: return RACE_BROKEN;
+    case 25: return RACE_MAGHAR;
+    default: throw std::out_of_range("index");
     }
 }
 
@@ -72,17 +104,33 @@ AC_API_EXPORT std::size_t EnumUtils<Races>::ToIndex(Races value)
 {
     switch (value)
     {
-        case RACE_HUMAN: return 0;
-        case RACE_ORC: return 1;
-        case RACE_DWARF: return 2;
-        case RACE_NIGHTELF: return 3;
-        case RACE_UNDEAD_PLAYER: return 4;
-        case RACE_TAUREN: return 5;
-        case RACE_GNOME: return 6;
-        case RACE_TROLL: return 7;
-        case RACE_BLOODELF: return 8;
-        case RACE_DRAENEI: return 9;
-        default: throw std::out_of_range("value");
+    case RACE_HUMAN: return 0;
+    case RACE_ORC: return 1;
+    case RACE_DWARF: return 2;
+    case RACE_NIGHTELF: return 3;
+    case RACE_UNDEAD_PLAYER: return 4;
+    case RACE_TAUREN: return 5;
+    case RACE_GNOME: return 6;
+    case RACE_TROLL: return 7;
+    case RACE_GOBLIN: return 8;
+    case RACE_BLOODELF: return 9;
+    case RACE_DRAENEI: return 10;
+    case RACE_WORGEN: return 11;
+    case RACE_PANDAREN: return 12;
+    case RACE_VULPERA: return 13;
+    case RACE_VOIDELF: return 14;
+    case RACE_NIGHTBORNE: return 15;
+    case RACE_LIGHTFORGED: return 16;
+    case RACE_EREDAR: return 17;
+    case RACE_KULTIRAN: return 18;
+    case RACE_ZANDALARI: return 19;
+    case RACE_DARKIRONDWARF: return 20;
+    case RACE_DRACTHYR: return 21;
+    case RACE_ILLIDARIA: return 22;
+    case RACE_ILLIDARIH: return 23;
+    case RACE_BROKEN: return 24;
+    case RACE_MAGHAR: return 25;
+    default: throw std::out_of_range("value");
     }
 }
 

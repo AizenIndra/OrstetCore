@@ -67,70 +67,114 @@ enum Gender
 // EnumUtils: DESCRIBE THIS
 enum Races
 {
-    RACE_NONE               = 0,  // SKIP
-    RACE_HUMAN              = 1,  // TITLE Human
-    RACE_ORC                = 2,  // TITLE Orc
-    RACE_DWARF              = 3,  // TITLE Dwarf
-    RACE_NIGHTELF           = 4,  // TITLE Night Elf
-    RACE_UNDEAD_PLAYER      = 5,  // TITLE Undead
-    RACE_TAUREN             = 6,  // TITLE Tauren
-    RACE_GNOME              = 7,  // TITLE Gnome
-    RACE_TROLL              = 8,  // TITLE Troll
-    //RACE_GOBLIN             = 9,
-    RACE_BLOODELF           = 10, // TITLE Blood Elf
-    RACE_DRAENEI            = 11 //, TITLE Draenei
-    //RACE_FEL_ORC        = 12,
-    //RACE_NAGA           = 13,
-    //RACE_BROKEN         = 14,
-    //RACE_SKELETON       = 15,
-    //RACE_VRYKUL         = 16,
-    //RACE_TUSKARR        = 17,
-    //RACE_FOREST_TROLL   = 18,
-    //RACE_TAUNKA         = 19,
-    //RACE_NORTHREND_SKELETON = 20,
-    //RACE_ICE_TROLL      = 21
+    RACE_NONE = 0,  // SKIP
+    RACE_HUMAN = 1,  // TITLE Human
+    RACE_ORC = 2,  // TITLE Orc
+    RACE_DWARF = 3,  // TITLE Dwarf
+    RACE_NIGHTELF = 4,  // TITLE Night Elf
+    RACE_UNDEAD_PLAYER = 5,  // TITLE Undead
+    RACE_TAUREN = 6,  // TITLE Tauren
+    RACE_GNOME = 7,  // TITLE Gnome
+    RACE_TROLL = 8,  // TITLE Troll
+    RACE_GOBLIN = 9,
+    RACE_BLOODELF = 10, // TITLE Blood Elf
+    RACE_DRAENEI = 11, //, TITLE Draenei
+    RACE_WORGEN = 12,
+    RACE_PANDAREN = 13,
+    RACE_VULPERA = 14,
+    RACE_VOIDELF = 15,
+    RACE_NIGHTBORNE = 16,
+    RACE_LIGHTFORGED = 17,
+    RACE_EREDAR = 18,
+    RACE_KULTIRAN = 19,
+    RACE_ZANDALARI = 20,
+    RACE_DARKIRONDWARF = 21,
+    RACE_DRACTHYR = 22,
+    RACE_ILLIDARIA = 23,
+    RACE_ILLIDARIH = 24,
+    RACE_BROKEN = 25,
+    RACE_MAGHAR = 26
+
 };
 
 // max+1 for player race
-#define MAX_RACES         12
+#define MAX_RACES         27
 
 #define RACEMASK_ALL_PLAYABLE \
-    ((1<<(RACE_HUMAN-1))   |(1<<(RACE_ORC-1))          |(1<<(RACE_DWARF-1))   | \
-    (1<<(RACE_NIGHTELF-1))|(1<<(RACE_UNDEAD_PLAYER-1))|(1<<(RACE_TAUREN-1))  | \
-    (1<<(RACE_GNOME-1))   |(1<<(RACE_TROLL-1))        |(1<<(RACE_BLOODELF-1))| \
-    (1<<(RACE_DRAENEI-1)))
+    ((1<<(RACE_HUMAN-1))          | \
+    (1<<(RACE_ORC-1))             | \
+    (1<<(RACE_DWARF-1))           | \
+    (1<<(RACE_NIGHTELF-1))        | \
+    (1<<(RACE_UNDEAD_PLAYER-1))   | \
+    (1<<(RACE_TAUREN-1))          | \
+    (1<<(RACE_GNOME-1))           | \
+    (1<<(RACE_TROLL-1))           | \
+    (1<<(RACE_GOBLIN-1))          | \
+    (1<<(RACE_BLOODELF-1))        | \
+    (1<<(RACE_DRAENEI-1))         | \
+    (1<<(RACE_WORGEN-1))          | \
+    (1<<(RACE_PANDAREN-1))        | \
+    (1<<(RACE_VULPERA-1))         | \
+    (1<<(RACE_VOIDELF-1))         | \
+    (1<<(RACE_NIGHTBORNE-1))      | \
+    (1<<(RACE_LIGHTFORGED-1))     | \
+    (1<<(RACE_EREDAR-1))          | \
+    (1<<(RACE_KULTIRAN-1))        | \
+    (1<<(RACE_ZANDALARI-1))       | \
+    (1<<(RACE_DARKIRONDWARF-1))   | \
+    (1<<(RACE_DRACTHYR-1))        | \
+    (1<<(RACE_ILLIDARIA-1))       | \
+    (1<<(RACE_ILLIDARIH-1))       | \
+    (1<<(RACE_BROKEN-1))          | \
+    (1<<(RACE_MAGHAR-1)))
 
 #define RACEMASK_ALLIANCE \
-    ((1<<(RACE_HUMAN-1)) | (1<<(RACE_DWARF-1)) | (1<<(RACE_NIGHTELF-1)) | \
-    (1<<(RACE_GNOME-1)) | (1<<(RACE_DRAENEI-1)))
+    ((1<<(RACE_HUMAN-1))         | \
+    (1<<(RACE_DWARF-1))          | \
+    (1<<(RACE_NIGHTELF-1))       | \
+    (1<<(RACE_GNOME-1))          | \
+    (1<<(RACE_DRAENEI-1))        | \
+    (1<<(RACE_WORGEN-1))         | \
+    (1<<(RACE_PANDAREN-1))       | \
+    (1<<(RACE_VOIDELF-1))        | \
+    (1<<(RACE_LIGHTFORGED-1))    | \
+    (1<<(RACE_KULTIRAN-1))       | \
+    (1<<(RACE_DARKIRONDWARF-1))  | \
+    (1<<(RACE_ILLIDARIA-1))      | \
+    (1<<(RACE_BROKEN-1)))
 
 #define RACEMASK_HORDE RACEMASK_ALL_PLAYABLE & ~RACEMASK_ALLIANCE
 
 // DisplayRace values from CreatureDisplayInfoExtra.dbc
 enum class DisplayRace : uint8
 {
-    None              = 0,
-    Human             = 1,
-    Orc               = 2,
-    Dwarf             = 3,
-    NightElf          = 4,
-    Undead            = 5,
-    Tauren            = 6,
-    Gnome             = 7,
-    Troll             = 8,
-    Goblin            = 9,
-    BloodElf          = 10,
-    Draenei           = 11,
-    FelOrc            = 12,
-    Naga              = 13,
-    Broken            = 14,
-    Skeleton          = 15,
-    Vrykul            = 16,
-    Tuskarr           = 17,
-    ForestTroll       = 18,
-    Taunka            = 19,
-    NorthrendSkeleton = 20,
-    IceTroll          = 21
+    None = 0,
+    Human = 1,
+    Orc = 2,
+    Dwarf = 3,
+    NightElf = 4,
+    Undead = 5,
+    Tauren = 6,
+    Gnome = 7,
+    Troll = 8,
+    Goblin = 9,
+    BloodElf = 10,
+    Draenei = 11,
+    Worgen = 12,
+    Pandaren = 13,
+    Vulpera = 14,
+    VoidElf = 15,
+    NightborneElf = 16,
+    Lightforged = 17,
+    Eredar = 18,
+    Kultiran = 19,
+    Zandalari = 20,
+    Darkirondwarf = 21,
+    Dracthyr = 22,
+    IllidariA = 23,
+    IllidariH = 24,
+    Broken = 25,
+    Maghar = 26
 };
 
 // Class value is index in ChrClasses.dbc
