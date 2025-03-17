@@ -121,11 +121,11 @@ void DonationSysteme::LookingItem(Player* player, uint32 id)
             if (bonus < final)
             {
                 str << "|cffff9933#|r |cffff9933Вам необходимо еще |cffffff4d" << final - bonus << " бонусов.|r\n";
-                str << "|cffff9933#|r |cffff9933Пополните свой аккаунт через наш сайт |cffffff4dwow-idk.ru|r\n";
+                str << "|cffff9933#|r |cffff9933Пополните свой аккаунт через наш сайт |cffffff4dorstet.online|r\n";
             }
 
             str << "|cffff9933############################################|r";
-            ChatHandler(player->GetSession()).PSendSysMessage("%s", str.str().c_str());
+            ChatHandler(player->GetSession()).PSendSysMessage("{}", str.str().c_str());
             break;
         }
     }
@@ -157,7 +157,7 @@ void DonationSysteme::DonatPayementFuction(Player* player, uint32 i)
                     return;
 
                 std::stringstream str;
-                str << "|cffff9933[|cffffff4dМагазин WOW-IDK|cffff9933]|r\n";
+                str << "|cffff9933[|cffffff4dМагазин ORSTET|cffff9933]|r\n";
                 str << "|cffff9933Вы действительно хотите купить данный предмет: |r\n";
                 str <<  DeathMatchMgr->GetItemLink((*itr)->itemID, session) << "\n";
                 str << "|cffff9933За |cffffff4d" << returnCost((*itr)->cost, (*itr)->discount) << "|cffff9933 бонусов ?|r";
@@ -195,12 +195,12 @@ std::string DonationSysteme::HeadMenu(Player* player)
     if (player->GetSession()->GetSessionDbLocaleIndex() == LOCALE_ruRU) {
         ss << "Приветствую вас, " << player->GetName() << "\n\n";
         ss << "На вашем аккаунте " << player->GetSession()->GetBonuses() << " бонусов.\n";
-        ss << "Пополнить счёт: wow-idk.ru";             
+        ss << "Пополнить счёт: orstet.online";             
     }
     else {
         ss << "Greetings, " << player->GetName() << "\n\n";
         ss << "You have " << player->GetSession()->GetBonuses() << "bonuses in your account";
-        ss << "Top up account wow-idk.ru";
+        ss << "Top up account orstet.online";
     }
     return ss.str();
 }

@@ -271,28 +271,28 @@ public:
         if (!pPlayer || !pItem)
             return true;
 
-        if (pPlayer->GetAuraCount(71201) >= 50)
+        if (pPlayer->GetAuraCount(71201) >= 100)
             return true;            
 
         uint32 entry = pItem->GetEntry();
         uint32 rate = 0;
 
-        if (pPlayer->GetAuraCount(71201) < 50) {
+        if (pPlayer->GetAuraCount(71201) < 100) {
             switch (entry) {
                 case 1042:
-                    rate = 50;
+                    rate = 5000;
                     break;
                 case 1043:
-                    rate = 100;
+                    rate = 10000;
                     break;
                 case 1044:
-                    rate = 250;
+                    rate = 25000;
                     break;
                 case 35778:
-                    rate = 1000;
+                    rate = 100000;
                     break;
                 case 842:
-                    rate = 5000;
+                    rate = 150000;
                     break;
                 default:
                     break;

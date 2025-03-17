@@ -16373,7 +16373,7 @@ bool Player::AcceptArenaToday()
 void Player::RewardRankPoints(uint32 amount, int source)
  {
     /* если уже максимальный ранг */
-    if (GetRankPoints() >= pvp_rang_points[49])
+    if (GetRankPoints() >= pvp_rang_points[99])
         return;
     
     if (sServerMenuMgr->isDoubleDays())
@@ -16453,7 +16453,7 @@ bool Player::CanRankUp()
     uint8 i = 0; /* считаем ранги */
     bool yes = false; /* проверка для повышение ранга */
 
-    while ((yes == false) && (i < 50))
+    while ((yes == false) && (i < 100))
     {
         if (GetRankPoints() >= pvp_rang_points[i] && GetAuraCount(RANKSYSTEMID) < i+1)
         {
@@ -16471,8 +16471,8 @@ bool Player::CanRankUp()
 int Player::GetRankByExp()
 {
     /* максимальный ранг */
-    if (GetRankPoints() >= pvp_rang_points[49])
-        return 50;
+    if (GetRankPoints() >= pvp_rang_points[99])
+        return 100;
 
     /* минимальный ранг (чтобы не заходить в while) */
     if (GetRankPoints() < pvp_rang_points[0])
@@ -16557,7 +16557,7 @@ uint32 Player::PointsUntilNextRank()
     uint8 i = 0;
     bool yes = false;
 
-    while ((yes == false) && i <= 50)
+    while ((yes == false) && i <= 100)
     {
         if (GetRankPoints() < pvp_rang_points[i])
         {
@@ -16572,7 +16572,7 @@ uint32 Player::PointsUntilNextRank()
 
 void Player::LoadPvPRank()
 {
-    if (GetAuraCount(RANKSYSTEMID) < 50)
+    if (GetAuraCount(RANKSYSTEMID) < 100)
         ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_glory_win_6, EN_glory_win_6), GetRankPoints(), GetRankByExp(), PointsUntilNextRank());
     else
         ChatHandler(GetSession()).PSendSysMessage(GetCustomText(this, RU_glory_win_10, EN_glory_win_10));
@@ -16584,10 +16584,10 @@ void Player::RewardArenaPoints(uint32 rate, int8 type, bool win)
         return;
 
     // если у игрока рейтинг меньше чем 50
-    if (rate < 50)
-        rate = 50;
+    if (rate < 100)
+        rate = 100;
 
-    uint32 arena = uint32((rate / 50) + GetRankByExp());
+    uint32 arena = uint32((rate / 100) + GetRankByExp());
     if (arena < 0)
         arena = 0;
 

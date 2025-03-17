@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `account` (
   `os` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `recruiter` int unsigned NOT NULL DEFAULT '0',
   `totaltime` int unsigned NOT NULL DEFAULT '0',
+  `bonuses` int unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Account System';
