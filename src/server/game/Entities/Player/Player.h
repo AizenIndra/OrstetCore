@@ -1189,6 +1189,11 @@ public:
     void GiveXP(uint32 xp, Unit* victim, float group_rate = 1.0f, bool isLFGReward = false);
     void GiveLevel(uint8 level);
 
+    bool PlayerAlreadyHasTwoProfessions(const Player* player) const;
+    bool IsSecondarySkill(SkillType skill) const;
+    void LearnSkillRecipesHelper(Player* player, uint32 skill_id);
+    bool LearnAllRecipesInProfession(Player* player, SkillType skill);
+
     void InitStatsForLevel(bool reapplyMods = false);
 
     [[nodiscard]] bool HasActivePowerType(Powers power) override;
@@ -2646,6 +2651,15 @@ public:
     [[nodiscard]] uint32 GetNextSave() const { return m_nextSave; }
     [[nodiscard]] SpellModContainer const& GetSpellModList(uint32 type) const { return m_spellMods[type]; }
 
+    // Ashenvale Addon IO
+    void SendAddonMessage(const char* message) const;
+    template<typename... Args> void SendAddonMessage(const char* fmt, Args&&... args) const { SendAddonMessage(Acore::StringFormat(fmt, std::forward<Args>(args)...).c_str()); }
+
+    uint64 GetCurrentTransmogrifier() const { return m_currentTransmogrifier; }
+    void SetCurrentTransmogrifier(uint64 guid) { m_currentTransmogrifier = guid; }
+
+    void SendAddonMessage(const std::string& message) const { SendAddonMessage(message.c_str()); }
+
     void SetServerSideVisibility(ServerSideVisibilityType type, AccountTypes sec);
     void SetServerSideVisibilityDetect(ServerSideVisibilityType type, AccountTypes sec);
 
@@ -2663,6 +2677,10 @@ public:
     // Settings
     [[nodiscard]] PlayerSetting GetPlayerSetting(std::string const& source, uint32 index);
     void UpdatePlayerSetting(std::string const& source, uint32 index, uint32 value);
+
+    // Item level system
+    void CalculateAverageItemLevel();
+    uint16 GetAverageItemLevel() const { return m_averageItemLevel; }
 
     void SendSystemMessage(std::string_view msg, bool escapeCharacters = false);
 
@@ -3040,6 +3058,12 @@ private:
     uint32 _pendingBindTimer;
 
     uint32 _activeCheats;
+
+    // Transmogrification system
+    uint64 m_currentTransmogrifier;
+
+    // [Argast-Core] Item Levels
+    uint16 m_averageItemLevel;
 
     // duel health and mana reset attributes
     uint32 healthBeforeDuel;

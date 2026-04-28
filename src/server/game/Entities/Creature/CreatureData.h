@@ -75,6 +75,7 @@ enum CreatureFlagsExtra : uint32
     CREATURE_FLAG_EXTRA_IGNORE_PATHFINDING              = 0x20000000,   // creature ignore pathfinding
     CREATURE_FLAG_EXTRA_IMMUNITY_KNOCKBACK              = 0x40000000,   // creature is immune to knockback effects
     CREATURE_FLAG_EXTRA_HARD_RESET                      = 0x80000000,
+    CREATURE_FLAG_EXTRA_TRANSMOGRIFIER                  = 0x90000000,   //Transmogrifier
 
     // Masks
     CREATURE_FLAG_EXTRA_DB_ALLOWED                      = (0xFFFFFFFF & ~CREATURE_FLAG_EXTRA_DUNGEON_BOSS) // SKIP

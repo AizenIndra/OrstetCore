@@ -34,6 +34,7 @@
 #include "SkillDiscovery.h"
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
+#include "TransmogrificationMgr.h"
 #include "UpdateFieldFlags.h"
 #include "Vehicle.h"
 #include "Weather.h"
@@ -54,6 +55,9 @@ void Player::Update(uint32 p_time)
 {
     if (!IsInWorld())
         return;
+ 
+    if (!this)
+        sTransmogrificationMgr->SendTransmogrificationMenuCloseTo(this);
 
     sScriptMgr->OnPlayerBeforeUpdate(this, p_time);
 

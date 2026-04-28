@@ -685,4 +685,9 @@ void WorldConfig::BuildConfigCache()
 
     // Achievement
     SetConfigValue<uint32>(CONFIG_ACHIEVEMENT_REALM_FIRST_KILL_WINDOW, "Achievement.RealmFirstKillWindow", 60);
+
+    // Shop
+    SetConfigValue<bool>(CONFIG_SHOP_ENABLE, "Shop.Enabled", false);
+    SetConfigValue<uint32>(CONFIG_SHOP_INTERVAL_UPDATE, "ShopUpdateInterval", 1 * MINUTE * IN_MILLISECONDS);
+
 }

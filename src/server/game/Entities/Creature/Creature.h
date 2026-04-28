@@ -132,6 +132,7 @@ public:
     [[nodiscard]] bool IsDungeonBoss() const;
     [[nodiscard]] bool IsImmuneToKnockback() const;
     [[nodiscard]] bool IsAvoidingAOE() const { return HasFlagsExtra(CREATURE_FLAG_EXTRA_AVOID_AOE); }
+    bool IsTransmogrifier() const { return (GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_TRANSMOGRIFIER) != 0; }
 
     uint8 getLevelForTarget(WorldObject const* target) const override; // overwrite Unit::getLevelForTarget for boss level support
 

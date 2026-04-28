@@ -16,6 +16,7 @@
  */
 
 #include "AccountMgr.h"
+#include "AddonIO.h"
 #include "CellImpl.h"
 #include "ChannelMgr.h"
 #include "Chat.h"
@@ -349,6 +350,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
 
     sScriptMgr->OnPlayerBeforeSendChatMessage(_player, type, lang, msg);
 
+    if (lang == LANG_ADDON)
+    {
+        if (utf8length(msg) > 1024)
+            return;
+
+        sAddonIO->HandleMessage(sender, msg);
+    }
+
     switch (type)
     {
         case CHAT_MSG_SAY:
@@ -361,8 +370,11 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
 
                 if (sender->GetLevel() < sWorld->getIntConfig(CONFIG_CHAT_SAY_LEVEL_REQ))
                 {
-                    ChatHandler(this).SendNotification(LANG_SAY_REQ, sWorld->getIntConfig(CONFIG_CHAT_SAY_LEVEL_REQ));
-                    return;
+                    if (lang != LANG_ADDON)
+                    {
+                        ChatHandler(this).SendNotification(LANG_SAY_REQ, sWorld->getIntConfig(CONFIG_CHAT_SAY_LEVEL_REQ));
+                        return;
+                    }
                 }
 
                 if (type == CHAT_MSG_SAY)
