@@ -291,6 +291,11 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), _cinematicMgr(*thi
     m_resetTalentsTime = 0;
     m_itemUpdateQueueBlocked = false;
 
+    /////////////////// VIP System /////////////////////
+    m_premiumTimer = 0;
+    m_vip = false;
+    m_unsetdate = 0;
+
     for (uint8 i = 0; i < MAX_MOVE_TYPE; ++i)
         m_forced_speed_changes[i] = 0;
 
@@ -1335,6 +1340,12 @@ uint8 Player::GetChatTag() const
         tag |= CHAT_TAG_AFK;
     if (IsCommentator())
         tag |= CHAT_TAG_COM;
+    if (IsPremium())
+    {
+        // Compatibility fallback for unpatched 3.3.5 clients:
+        // they may not decode 0x20 ("VIP"), but they do decode COM.
+        tag |= CHAT_TAG_COM;
+    }
     if (IsDeveloper())
         tag |= CHAT_TAG_DEV;
 
@@ -5808,6 +5819,9 @@ void Player::CheckAreaExploreAndOutdoor()
                     XP = uint32(sObjectMgr->GetBaseXP(areaEntry->area_level) * sWorld->getRate(RATE_XP_EXPLORE));
                 }
 
+                if (IsPremium())
+                    XP *= sWorld->getRate(RATE_VIP_XP_KILL);
+
                 sScriptMgr->OnPlayerGiveXP(this, XP, nullptr, PlayerXPSource::XPSOURCE_EXPLORE);
                 GiveXP(XP, nullptr);
                 SendExplorationExperience(areaId, XP);
@@ -6185,6 +6199,10 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool awar
     }
 
     honor_f *= sWorld->getRate(RATE_HONOR);
+
+    if (IsPremium())
+        honor_f *= sWorld->getRate(RATE_VIP_HONOR);
+
     // Back to int now
     honor = int32(honor_f);
     // honor - for show honor points in log
@@ -16498,4 +16516,13 @@ bool Player::LearnAllRecipesInProfession(Player* player, SkillType skill)
     player->SetSkill(SkillInfo->id, player->GetSkillStep(SkillInfo->id), maxLevel, maxLevel);
     //handler.PSendSysMessage(LANG_COMMAND_LEARN_ALL_RECIPES, skill_name);
     return true;
+}
+
+void Player::SetPremiumStatus(bool vipstatus)
+{
+    m_vip = vipstatus;
+    if (m_vip)
+        m_premiumTimer = MINUTE * IN_MILLISECONDS; // 60 seconds, check premium expiry interval
+    else
+        m_premiumTimer = 0;
 }

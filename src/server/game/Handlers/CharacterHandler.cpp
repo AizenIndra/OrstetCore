@@ -1049,6 +1049,26 @@ void WorldSession::HandlePlayerLoginFromDB(LoginQueryHolder const& holder)
     if (pCurrChar->IsGameMaster())
         ChatHandler(this).SendNotification(LANG_GM_ON);
 
+    bool vip = AccountMgr::GetVipStatus(GetAccountId());
+    if (vip)
+    {
+        time_t endTime = AccountMgr::GetVipEndTime(GetAccountId());
+        time_t now = GameTime::GetGameTime().count();
+
+        // Safety: if EndTime is missing/broken, don't auto-delete on login.
+        if (endTime > 0)
+        {
+            if (now > endTime)
+            {
+                vip = false;
+                AccountMgr::RemoveVipStatus(GetAccountId());
+            }
+            else
+                pCurrChar->SetPremiumUnsetdate(endTime);
+        }
+    }
+
+    pCurrChar->SetPremiumStatus(vip);
     std::string IP_str = GetRemoteAddress();
     LOG_INFO("entities.player", "Account: {} (IP: {}) Login Character:[{}] ({}) Level: {}",
                   GetAccountId(), IP_str, pCurrChar->GetName(), pCurrChar->GetGUID().ToString(), pCurrChar->GetLevel());

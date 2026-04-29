@@ -63,6 +63,7 @@ void AddSC_spellinfo_commandscript();
 void AddSC_tele_commandscript();
 void AddSC_ticket_commandscript();
 void AddSC_titles_commandscript();
+void AddSC_vip_commandscript();
 void AddSC_wp_commandscript();
 void AddSC_cache_commandscript();
 void AddSC_item_commandscript();
@@ -120,6 +121,7 @@ void AddCommandsScripts()
     AddSC_tele_commandscript();
     AddSC_ticket_commandscript();
     AddSC_titles_commandscript();
+    AddSC_vip_commandscript();
     AddSC_wp_commandscript();
     AddSC_cache_commandscript();
     AddSC_item_commandscript();

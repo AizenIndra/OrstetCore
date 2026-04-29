@@ -690,4 +690,24 @@ void WorldConfig::BuildConfigCache()
     SetConfigValue<bool>(CONFIG_SHOP_ENABLE, "Shop.Enabled", false);
     SetConfigValue<uint32>(CONFIG_SHOP_INTERVAL_UPDATE, "ShopUpdateInterval", 1 * MINUTE * IN_MILLISECONDS);
 
+    // VIP system
+    SetConfigValue<bool>(CONFIG_VIP_DEBUFF, "Config.Vip.Debuff.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_BANK, "Config.Vip.Bank.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_MAIL, "Config.Vip.Mail.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_REPAIR, "Config.Vip.Repair.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_RESET_TALENTS, "Config.Vip.Reset.Talents.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_TAXI, "Config.Vip.Taxi.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_HOME, "Config.Vip.Home.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_CHANGE_RACE, "Config.Vip.Change.Race.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_CUSTOMIZE, "Config.Vip.Customize.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_CAPITAL, "Config.Vip.Capital.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_APPEAR, "Config.Vip.Appear.Command", false);
+    SetConfigValue<bool>(CONFIG_VIP_SUMMON, "Config.Vip.Summon.Command", false);
+    // Rate premium
+    SetConfigValue<float>(RATE_VIP_XP_KILL, "Rate.XP.Kill.Premium", 1.0f);
+    SetConfigValue<float>(RATE_VIP_XP_QUEST, "Rate.XP.Quest.Premium", 1.0f);
+    SetConfigValue<float>(RATE_VIP_HONOR, "Rate.Honor.Premium", 1.0f);
+    SetConfigValue<float>(RATE_VIP_REPUTATION, "Rate.Reputation.Gain.Premium", 1.0f);
+    SetConfigValue<uint32>(CONFIG_SKILL_GAIN_CRAFTING_VIP, "SkillGain.Crafting.Premium", 1);
+    SetConfigValue<uint32>(CONFIG_SKILL_GAIN_GATHERING_VIP, "SkillGain.Gathering.Premium", 1);
 }

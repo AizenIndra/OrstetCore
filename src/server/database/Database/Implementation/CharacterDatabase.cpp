@@ -627,6 +627,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     // Transmogrification
     PrepareStatement(CHAR_DEL_TRANSMOGRIFICATION_INFO, "DELETE FROM item_transmogrification WHERE item = ?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_INS_TRANSMOGRIFICATION_INFO, "INSERT INTO item_transmogrification (item, transEntry) VALUES (?, ?)", CONNECTION_ASYNC);
+    
+    // vip
+    PrepareStatement(CHAR_GET_CHARACTERS_ONLINE_ON_ACCOUNT, "SELECT guid FROM characters WHERE online > 0 AND account = ?", CONNECTION_SYNCH);
 }
 
 CharacterDatabaseConnection::CharacterDatabaseConnection(MySQLConnectionInfo& connInfo) : MySQLConnection(connInfo)

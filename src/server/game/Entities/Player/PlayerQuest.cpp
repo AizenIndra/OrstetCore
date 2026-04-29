@@ -746,6 +746,9 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
     // Repeatable quests (not time-based reset ones) should not give XP on subsequent completions
     uint32 XP = rewarded ? 0 : CalculateQuestRewardXP(quest);
 
+    if (IsPremium())
+        XP *= sWorld->getRate(RATE_VIP_XP_QUEST);
+
     sScriptMgr->OnPlayerQuestComputeXP(this, quest, XP);
     int32 moneyRew = 0;
     if (GetLevel() >= sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL) || sScriptMgr->OnPlayerShouldBeRewardedWithMoneyInsteadOfExp(this))

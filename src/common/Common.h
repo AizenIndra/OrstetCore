@@ -37,6 +37,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+ 
+#if AC_COMPILER == AC_COMPILER_MICROSOFT
+
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+
+#endif
+
+inline unsigned long atoul(char const* str) { return strtoul(str, nullptr, 10); }
+inline unsigned long long atoull(char const* str) { return strtoull(str, nullptr, 10); }
 
 #define STRINGIZE(a) #a
 

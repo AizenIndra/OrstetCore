@@ -161,6 +161,58 @@ void LoginDatabaseConnection::DoPrepareStatements()
     PrepareStatement(LOGIN_SEL_SHOP_BONUS, "SELECT bonuses FROM account_donate WHERE id = ?", CONNECTION_SYNCH);
     PrepareStatement(LOGIN_SEL_SHOP_VOTE, "SELECT votes FROM account_donate WHERE id = ?", CONNECTION_SYNCH);
     PrepareStatement(LOGIN_INSERT_STORE_BALANCE, "INSERT INTO account_donate VALUES (?, ?, ?, ?, ?)", CONNECTION_ASYNC);
+
+    // Premium
+    // NOTE: Premium считается активным только если active=1 и EndTime > CURRENT_TIMESTAMP()
+    PrepareStatement(LOGIN_SEL_IS_PREMIUM,
+        "SELECT 1 FROM account_premium WHERE id = ? AND active = 1 AND EndTime > CURRENT_TIMESTAMP()",
+        CONNECTION_SYNCH);
+
+    PrepareStatement(LOGIN_INS_ACCOUNT_PREMIUM,
+        "REPLACE INTO `account_premium` (`id`, `StartTime`, `EndTime`, `active`) "
+        "VALUES (?, CURRENT_TIMESTAMP(), FROM_UNIXTIME(?), ?)",
+        CONNECTION_ASYNC);
+
+    // Upsert: create row if missing, otherwise renew it
+    PrepareStatement(LOGIN_UPD_ACCOUNT_PREMIUM_NEW,
+        "INSERT INTO `account_premium` (`id`, `StartTime`, `EndTime`, `active`) "
+        "VALUES (?, CURRENT_TIMESTAMP(), FROM_UNIXTIME(?), 1) "
+        "ON DUPLICATE KEY UPDATE StartTime = CURRENT_TIMESTAMP(), EndTime = FROM_UNIXTIME(?), active = 1",
+        CONNECTION_ASYNC);
+
+    PrepareStatement(LOGIN_REM_ACCOUNT_PREMIUM,
+        "UPDATE `account_premium` SET active = 0 WHERE id = ?",
+        CONNECTION_ASYNC);
+
+    PrepareStatement(LOGIN_SET_ACCOUNT_PREMIUM,
+        "INSERT INTO account_premium (id, StartTime, EndTime, active) "
+        "VALUES (?, CURRENT_TIMESTAMP(), FROM_UNIXTIME(?), ?)",
+        CONNECTION_ASYNC);
+
+    PrepareStatement(LOGIN_DEL_ACCOUNT_PREMIUM,
+        "DELETE FROM account_premium WHERE id = ?",
+        CONNECTION_ASYNC);
+
+    PrepareStatement(LOGIN_UPD_ACCOUNT_PREMIUM,
+        "UPDATE account_premium SET StartTime = CURRENT_TIMESTAMP(), EndTime = FROM_UNIXTIME(?), active = 1 "
+        "WHERE id = ?",
+        CONNECTION_ASYNC);
+
+    PrepareStatement(LOGIN_GET_ACCOUNT_PREMIUM_STATUS_BY_ID,
+        "SELECT 1 FROM account_premium WHERE id = ? AND active = 1 AND EndTime > CURRENT_TIMESTAMP()",
+        CONNECTION_SYNCH);
+
+    PrepareStatement(LOGIN_GET_ACCOUNT_PREMIUM_UNSETDATE_BY_ID,
+        "SELECT UNIX_TIMESTAMP(EndTime) FROM account_premium WHERE id = ? AND active = 1",
+        CONNECTION_SYNCH);
+
+    PrepareStatement(LOGIN_GET_ACCOUNT_PREMIUM_CHAT_TEXT_COLOR,
+        "SELECT chat_text_color FROM account_premium WHERE id = ?",
+        CONNECTION_SYNCH);
+
+    PrepareStatement(LOGIN_SET_ACCOUNT_PREMIUM_CHAT_TEXT_COLOR,
+        "UPDATE account_premium SET chat_text_color = ? WHERE id = ?",
+        CONNECTION_ASYNC);
 }
 
 LoginDatabaseConnection::LoginDatabaseConnection(MySQLConnectionInfo& connInfo) : MySQLConnection(connInfo)

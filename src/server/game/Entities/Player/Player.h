@@ -841,6 +841,7 @@ enum PlayerChatTag
     CHAT_TAG_GM         = 0x04,
     CHAT_TAG_COM        = 0x08, // Commentator tag. Do not exist in clean client
     CHAT_TAG_DEV        = 0x10,
+    CHAT_TAG_VIP        = 0x20,
 };
 
 enum PlayedTimeIndex
@@ -2681,6 +2682,12 @@ public:
     // Item level system
     void CalculateAverageItemLevel();
     uint16 GetAverageItemLevel() const { return m_averageItemLevel; }
+    
+    // VIP
+    void SetPremiumStatus(bool vipstatus);
+    bool IsPremium() const { return m_vip; }
+    void SetPremiumUnsetdate(time_t unsetdate) { m_unsetdate = unsetdate; }
+    time_t GetPremiumUnsetdate() const { return m_unsetdate; }
 
     void SendSystemMessage(std::string_view msg, bool escapeCharacters = false);
 
@@ -3041,6 +3048,11 @@ private:
     bool m_canKnockback;
 
     std::unique_ptr<PetStable> m_petStable;
+
+    // VIP
+    bool m_vip;                 // Used for VIP func
+    uint32 m_premiumTimer;
+    time_t m_unsetdate;         // time (unixtime) of unsetdate vip previlegies
 
     // Temporary removed pet cache
     uint32 m_temporaryUnsummonedPetNumber;
