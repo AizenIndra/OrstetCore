@@ -21,9 +21,51 @@
 #include "ObjectMgr.h"
 #include "Chat.h"
 #include <boost/algorithm/string.hpp>
+#include <sstream>
+#include <unordered_set>
 #include "PreparedStatement.h"
 
 #define INSPECT_DISTANCE                28.0f
+
+namespace
+{
+    constexpr uint32 STORE_ITEM_FLAG_SPECIAL = 0x00000010u;
+
+    uint8 ResolveStoreDiscount(uint32 price, uint8 discount, uint32 discountPrice)
+    {
+        if (discount > 0)
+            return discount;
+
+        if (price > 0 && discountPrice > 0 && discountPrice < price)
+        {
+            uint32 discountValue = ((price - discountPrice) * 100u) / price;
+            if (discountValue == 0)
+                discountValue = 1;
+            if (discountValue > 99u)
+                discountValue = 99u;
+
+            return static_cast<uint8>(discountValue);
+        }
+
+        return 0;
+    }
+
+    uint32 ResolveStoreDiscountPriceForClient(uint32 price, uint8 discount, uint32 discountPrice)
+    {
+        if (discount > 0 && discountPrice > 0 && discountPrice < price)
+            return discountPrice;
+
+        return 0;
+    }
+
+    uint32 ResolveStorePriceForPurchase(uint32 price, uint8 discount, uint32 discountPrice)
+    {
+        if (discount > 0 && discountPrice > 0 && discountPrice < price)
+            return discountPrice;
+
+        return price;
+    }
+}
 
 std::unordered_map<std::string, AddonMessageHandler> addonMessagesTable =
 {
@@ -93,6 +135,37 @@ enum PAID_SERVICE {
     //MMOTOP
     PAID_SERVICE_PREMIUM_ONE_DAY        = 1000019,
 };
+
+static bool IsPaidServiceEntry(uint32 itemEntry)
+{
+    switch (itemEntry)
+    {
+        case PAID_SERVICE_NAME_CHANGE:
+        case PAID_SERVICE_FACTION_CHANGE:
+        case PAID_SERVICE_RACE_CHANGE:
+        case PAID_SERVICE_GUILDNAME_CHANGE:
+        case PAID_SERVICE_GOLD_BUY:
+        case PAID_SERVICE_ALCHEMY_LEARH:
+        case PAID_SERVICE_BLACKSMITHING_LEARH:
+        case PAID_SERVICE_ENCHANTING_LEARN:
+        case PAID_SERVICE_ENGINEERIN_LEARN:
+        case PAID_SERVICE_JEWELCRAFTING_LEARN:
+        case PAID_SERVICE_HERBALISM_LEARN:
+        case PAID_SERVICE_LEATHERWORKING_LEARN:
+        case PAID_SERVICE_MINING_LEARN:
+        case PAID_SERVICE_SKINNING_LEARN:
+        case PAID_SERVICE_TAILORING_LEARN:
+        case PAID_SERVICE_FISHING_LEARH:
+        case PAID_SERVICE_INSCRIPTION_LEARN:
+        case PAID_SERVICE_COOKING_LEARN:
+        case PAID_SERVICE_FIRST_AID_LEARN:
+        case PAID_SERVICE_PREMIUM_ONE_DAY:
+        case PAID_SERVICE_LEVELUP:
+            return true;
+        default:
+            return false;
+    }
+}
 
 #define ARMORY_CATEGORYID               4
 
@@ -676,34 +749,56 @@ void AddonIO::HandleShopItemListRequest(Player* player, std::string body)
         return;
 
     auto store = sWorld->GetStoreItem();
-    auto collection = sWorld->GetStorCollection();
+    auto specialOffers = sWorld->GetStoreSpecialOffer();
+
+    std::unordered_set<uint32> specialOfferProductIDs;
+    for (auto const& offerData : specialOffers)
+    {
+        if (offerData.second.productID != 0)
+            specialOfferProductIDs.insert(offerData.second.productID);
+    }
     
     if (!store.empty())
     {
         for (auto it = store.begin(); it != store.end(); ++it)
         {
-            if (ItemTemplate const* proto = sObjectMgr->GetItemTemplate(it->second.itemEntry))
+            ItemTemplate const* proto = sObjectMgr->GetItemTemplate(it->second.itemEntry);
+            bool isPaidService = IsPaidServiceEntry(it->second.itemEntry);
+
+            // Services use synthetic itemEntry ids and have no item_template row.
+            if (!proto && !isPaidService)
+                continue;
+
+            if (proto && it->second.CategoryID == ARMORY_CATEGORYID)
             {
-                if (it->second.CategoryID == ARMORY_CATEGORYID)
-                {
-                    if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_PLATE && !player->HasSpell(750))
-                        continue;
+                if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_PLATE && !player->HasSpell(750))
+                    continue;
 
-                    if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_MAIL && !player->HasSpell(8737))
-                        continue;
+                if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_MAIL && !player->HasSpell(8737))
+                    continue;
 
-                    if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_LEATHER && !player->HasSpell(9077))
-                        continue;
+                if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_LEATHER && !player->HasSpell(9077))
+                    continue;
 
-                    if (!(1 << (player->getClass() - 1) & proto->AllowableClass))
-                        continue;
+                if (!(1 << (player->getClass() - 1) & proto->AllowableClass))
+                    continue;
 
-                    if (!(1 << (player->getRace() - 1) & proto->AllowableRace))
-                        continue;
-                }
-                
-                player->SendAddonMessage("ASMSG_SHOP_ITEM\t{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}", it->first, it->second.itemEntry, it->second.count, it->second.price, it->second.discount, it->second.discountPrice, it->second.creatureEntry, it->second.storeFlags, it->second.CategoryID, it->second.SubCategoryID, it->second.MoneyID);
+                if (!(1 << (player->getRace() - 1) & proto->AllowableRace))
+                    continue;
             }
+
+            uint32 price = it->second.price;
+            uint8 discount = ResolveStoreDiscount(price, it->second.discount, it->second.discountPrice);
+            uint32 discountPrice = ResolveStoreDiscountPriceForClient(price, discount, it->second.discountPrice);
+            uint32 storeFlags = it->second.storeFlags;
+
+            if (discount > 0)
+                storeFlags |= STORE_ITEM_FLAG_SPECIAL;
+
+            if (specialOfferProductIDs.find(it->first) != specialOfferProductIDs.end())
+                storeFlags |= STORE_ITEM_FLAG_SPECIAL;
+
+            player->SendAddonMessage("ASMSG_SHOP_ITEM\t{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}", it->first, it->second.itemEntry, it->second.count, price, discount, discountPrice, it->second.creatureEntry, storeFlags, it->second.CategoryID, it->second.SubCategoryID, it->second.MoneyID);
         }
 
     }
@@ -748,8 +843,9 @@ void AddonIO::HandleShopBuyItemRequest(Player* player, std::string body)
                 for (auto it = store.begin(); it != store.end(); ++it)
                     if (it->first == std::stoi(par[0]))
                     {
+                        uint8 discount = ResolveStoreDiscount(it->second.price, it->second.discount, it->second.discountPrice);
                         item = it->second.itemEntry;
-                        cost = it->second.discountPrice;
+                        cost = ResolveStorePriceForPurchase(it->second.price, discount, it->second.discountPrice);
                         db_count = it->second.count;
                         moneyID = it->second.MoneyID;
                         if (par.size() != 2)
@@ -883,33 +979,42 @@ void AddonIO::HandleShopSpecialOfferListRequest(Player* player, std::string body
     if (!player)
         return;
 
-    auto sess = player->GetSession();
     auto offer = sWorld->GetStoreSpecialOffer();
     auto details = sWorld->GetStoreSpecialDetails();
 
-    uint32 detailId = 0;
-    char sub_resp[256], response[256];
+    if (offer.empty())
+        return;
 
-    /*if (!offer.empty())
-        for (auto it = offer.begin(); it != offer.end(); ++it)
-        {
-            detailId = it->second.details;
-            snprintf(response, 256, "ASMSG_SHOP_SPECIAL_OFFER_INFO\t{}|{}|{}|{}|{}|{}|{}|{}|{}|0|0|0", it->first, it->second.background.c_str(), it->second.headline.c_str(), it->second.title.c_str(), it->second.description.c_str(), it->second.time, it->second.productID, it->second.itemEntry, it->second.price);
-            snprintf(sub_resp, 256, "ASMSG_SHOP_SPECIAL_OFFER_DETAILS\t{}|{}|%s|{}|", it->first, it->second.title.c_str(), it->second.detailsTitle.c_str(), it->second.price);
-        }*/
-
-    if (!details.empty())
+    for (auto const& it : offer)
     {
-        //offerId|title|detailTitle|price|data: {itemId<role><count>:..:}
-        for (auto it = details.begin(); it != details.end(); ++it)
-            if (it->first == detailId)
-            {
-                char a[256];
-                snprintf(a, 256, "{}<{}><{}>:", it->second.itemID, it->second.role, it->second.count);
-                strcat(sub_resp, a);
-            }
+        std::ostringstream infoResponse;
+        infoResponse << "ASMSG_SHOP_SPECIAL_OFFER_INFO\t"
+                     << it.first << "|"
+                     << it.second.background << "|"
+                     << it.second.headline << "|"
+                     << it.second.title << "|"
+                     << it.second.description << "|"
+                     << it.second.time << "|"
+                     << it.second.productID << "|"
+                     << it.second.itemEntry << "|"
+                     << it.second.price << "|0|0|0";
+        player->SendAddonMessage(infoResponse.str());
 
-        player->SendAddonMessage(sub_resp);
+        std::ostringstream detailsItems;
+        auto detailsRange = details.equal_range(it.second.details);
+        for (auto detailIt = detailsRange.first; detailIt != detailsRange.second; ++detailIt)
+        {
+            detailsItems << detailIt->second.itemID << "<" << detailIt->second.role << "><" << detailIt->second.count << ">:";
+        }
+
+        std::ostringstream detailsResponse;
+        detailsResponse << "ASMSG_SHOP_SPECIAL_OFFER_DETAILS\t"
+                        << it.first << "|"
+                        << it.second.title << "|"
+                        << it.second.detailsTitle << "|"
+                        << it.second.price << "|"
+                        << detailsItems.str();
+        player->SendAddonMessage(detailsResponse.str());
     }
 }
 
