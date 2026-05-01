@@ -55,6 +55,13 @@ public:
 
     //Other
     void HandleAverageItemLevelRequest(Player* player, std::string body);
+
+    void HandleGuildSpellsRequest(Player* player, std::string body);
+    void HandleGuildLevelRequest(Player* player, std::string body);
+    void HandleGuildOnlineRequest(Player* player, std::string body);
+    void HandleGuildIlvlsRequest(Player* player, std::string body);
+    void HandleGuildEmblemRequest(Player* player, std::string body);
+    void HandleGuildTeamRequest(Player* player, std::string body);
 };
 
 typedef void(AddonIO::*AddonMessageHandler)(Player*, std::string);

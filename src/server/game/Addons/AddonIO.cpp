@@ -20,6 +20,12 @@
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Chat.h"
+#include "Guild.h"
+#include "GuildMgr.h"
+#include "Chat.h"
+#include "Mail.h"
+#include "Item.h"
+#include "CharacterCache.h"
 #include <boost/algorithm/string.hpp>
 #include <sstream>
 #include <unordered_set>
@@ -89,7 +95,14 @@ std::unordered_map<std::string, AddonMessageHandler> addonMessagesTable =
     /*{ "ACMSG_SHOP_SUBSCRIBE",                           &AddonIO::HandleShopSubscribeRequest               },*/
     /*{ "ACMSG_SHOP_PURCHASE_REFUND",                     &AddonIO::HandleShopPurchaseRefundRequest          },*/
     { "ACMSG_SHOP_COLLECTION_LOAD_REQUEST",             &AddonIO::HandleShopCollectionLoadRequest          },
-    { "ACMSG_SHOP_ITEM_COUNT",                          &AddonIO::HandleShopItemCountRequest               }
+    { "ACMSG_SHOP_ITEM_COUNT",                          &AddonIO::HandleShopItemCountRequest               },
+    //Guild System
+    { "ACMSG_GUILD_SPELLS_REQUEST",                     &AddonIO::HandleGuildSpellsRequest                 },
+    { "ACMSG_GUILD_LEVEL_REQUEST",                      &AddonIO::HandleGuildLevelRequest                  },
+    { "ACMSG_GUILD_ONLINE_REQUEST",                     &AddonIO::HandleGuildOnlineRequest                 },
+    { "ACMSG_GUILD_ILVLS_REQUEST",                      &AddonIO::HandleGuildIlvlsRequest                  },
+    { "ACMSG_GUILD_EMBLEM_REQUEST",                     &AddonIO::HandleGuildEmblemRequest                 },
+    { "ACMSG_GUILD_TEAM",                               &AddonIO::HandleGuildTeamRequest                   }
 
 };
 
@@ -696,6 +709,98 @@ void AddonIO::HandleTransmogrificationApply(Player* player, std::string body)
     }
  
     sTransmogrificationMgr->HandleTransmogrificationApplyRequestFrom(player, data);
+}
+
+void AddonIO::HandleGuildSpellsRequest(Player* player, std::string /*body*/)
+{
+    if (!player)
+        return;
+
+    if (!sGuildPerkSpellsStore.empty())
+    {
+        std::string response = "ASMSG_GUILD_SPELLS_RESPONSE\t";
+        for (auto it = sGuildPerkSpellsStore.begin(); it != sGuildPerkSpellsStore.end(); ++it)
+            response += std::to_string(it->second) + ":" + std::to_string(it->first) + ",";
+        player->SendAddonMessage(response.c_str());
+    }
+}
+
+void AddonIO::HandleGuildLevelRequest(Player* player, std::string /*body*/)
+{
+    if (!player)
+        return;
+
+    if (Guild* guild = player->GetGuild())
+    {
+        uint8 lvl = guild->GetLevel() == GUILD_MAX_LEVEL ? (GUILD_MAX_LEVEL - 1) : guild->GetLevel();
+        uint32 xp_for_old_lvl = lvl != 0 ? sWorld->GetXpForNextLevel(lvl - 1) : 0;
+        uint32 xp_for_next_lvl = sWorld->GetXpForNextLevel(lvl);
+        uint32 totalxp = xp_for_next_lvl - xp_for_old_lvl;
+        uint32 xp = guild->GetCurrentXP() - xp_for_old_lvl;
+        uint32 dailyCap = sWorld->getIntConfig(CONFIG_GUILD_DAILY_XP_CAP);
+
+        player->SendAddonMessage("ASMSG_GUILD_LEVEL_INFO\t%d:%d:%d:%d:%d", guild->GetLevel(), xp, totalxp, guild->GetGuildTodayXP(), dailyCap);
+    }
+}
+
+void AddonIO::HandleGuildOnlineRequest(Player* player, std::string /*body*/)
+{
+    if (!player)
+        return;
+
+    if (Guild* guild = player->GetGuild())
+        player->SendAddonMessage("ASMSG_GUILD_PLAYERS_COUNT\t%d:%d", guild->GetOnlineMembers(), guild->GetMemberCount());
+}
+
+void AddonIO::HandleGuildIlvlsRequest(Player* player, std::string /*body*/)
+{
+    if (!player)
+        return;
+
+    if (Guild* guild = player->GetGuild())
+    {
+        std::string response = "ASMSG_GUILD_PLAYERS_ILVL\t";
+        std::unordered_map<uint32, Guild::Member> members = guild->GetMembers();
+        for (const auto& itr : members)
+            response += itr.second.GetName() + ":" + std::to_string(itr.second.GetAverageLvl()) + "|";
+
+        player->SendAddonMessage(response.c_str());
+    }
+}
+
+void AddonIO::HandleGuildEmblemRequest(Player* player, std::string /*body*/)
+{
+    if (!player)
+        return;
+
+    if (Guild* guild = player->GetGuild())
+    {
+        EmblemInfo emblem = guild->GetEmblemInfo();
+        player->SendAddonMessage("ASMSG_PLAYER_GUILD_EMBLEM_INFO\t%d:%d:%d:%d:%d", emblem.GetStyle(), emblem.GetColor(), emblem.GetBorderStyle(), emblem.GetBorderColor(), emblem.GetBackgroundColor());
+    }
+}
+
+void AddonIO::HandleGuildTeamRequest(Player* player, std::string /*body*/)
+{
+    if (!player)
+        return;
+
+    uint8 factionIcon = 1;
+    switch (player->getRace())
+    {
+    case RACE_DRAENEI:
+    case RACE_HUMAN:
+    case RACE_GNOME:
+    case RACE_DWARF:
+    case RACE_NIGHTELF:
+        //case RACE_VOIDELF:
+        factionIcon = 0;
+        [[fallthrough]];
+    default:
+        break;
+    }
+
+    player->SendAddonMessage("ASMSG_GUILD_TEAM\t%d", factionIcon);
 }
 
 void AddonIO::HandleAverageItemLevelRequest(Player* player, std::string body)

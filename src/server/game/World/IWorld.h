@@ -20,6 +20,7 @@
 
 #include "AsyncCallbackProcessor.h"
 #include "Common.h"
+#include "Map.h"
 #include "Duration.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
@@ -165,6 +166,8 @@ public:
     virtual void   ResetEventSeasonalQuests(uint16 event_id) = 0;
     [[nodiscard]] virtual std::string const& GetRealmName() const = 0;
     virtual void SetRealmName(std::string name) = 0;
+
+    virtual uint32 GetXpForNextLevel(uint8 level) = 0;
 
     //Store
     void LoadShop();

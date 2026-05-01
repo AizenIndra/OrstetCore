@@ -710,4 +710,19 @@ void WorldConfig::BuildConfigCache()
     SetConfigValue<float>(RATE_VIP_REPUTATION, "Rate.Reputation.Gain.Premium", 1.0f);
     SetConfigValue<uint32>(CONFIG_SKILL_GAIN_CRAFTING_VIP, "SkillGain.Crafting.Premium", 1);
     SetConfigValue<uint32>(CONFIG_SKILL_GAIN_GATHERING_VIP, "SkillGain.Gathering.Premium", 1);
+
+    //Guild-System
+    SetConfigValue<bool>(CONFIG_GUILD_LEVEL_ENABLE, "Guild.Level.Enable", false);
+    SetConfigValue<bool>(CONFIG_GUILD_SYSTEM_REWARD_BG, "Guild.Reward.Battleground.Enable", false);
+    SetConfigValue<uint32>(CONFIG_GUILD_SYSTEM_BG_REWARD_WINNERCOUNT, "Guild.Reward.Battleground.WinnerCount", 100);
+    SetConfigValue<uint32>(CONFIG_GUILD_SYSTEM_BG_REWARD_LOSERCOUNT, "Guild.Reward.Battleground.LoserCount", 0);
+    SetConfigValue<bool>(CONFIG_GUILD_SYSTEM_REWARD_ARENA, "Guild.Reward.Arena.Enable", false);
+    SetConfigValue<uint32>(CONFIG_GUILD_SYSTEM_ARENA_REWARD_WINNERCOUNT, "Guild.Reward.Arena.WinnerCount", 30);
+    SetConfigValue<uint32>(CONFIG_GUILD_SYSTEM_ARENA_REWARD_LOSERCOUNT, "Guild.Reward.Arena.LoserCount", 0);
+    SetConfigValue<bool>(CONFIG_GUILD_SYSTEM_REWARD_LVLUP, "Guild.Reward.OnLvlUP", false);
+    SetConfigValue<uint32>(CONFIG_GUILD_SYSTEM_LVLUP_REWARD, "Guild.Reward.OnLvlUP.Count", 0);
+    SetConfigValue<bool>(CONFIG_GUILD_SYSTEM_REWARD_ONPLAYERKILL, "Guild.Reward.OnKillPlayers.Enable", false);
+    SetConfigValue<uint32>(CONFIG_GUILD_SYSTEM_ONPLAYERKILL_REWARD, "Guild.Reward.OnKillPlayers.Count", 0);
+    SetConfigValue<bool>(CONFIG_GUILD_SYSTEM_REWARD_ONCREATUREKILL, "Guild.Reward.OnKillCreature.Enable", false);
+    SetConfigValue<uint32>(CONFIG_GUILD_DAILY_XP_CAP, "Guild.TodayCap.XP", 50000);
 }
