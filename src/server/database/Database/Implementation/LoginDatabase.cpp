@@ -206,12 +206,12 @@ void LoginDatabaseConnection::DoPrepareStatements()
         "SELECT UNIX_TIMESTAMP(EndTime) FROM account_premium WHERE id = ? AND active = 1",
         CONNECTION_SYNCH);
 
-    PrepareStatement(LOGIN_GET_ACCOUNT_PREMIUM_CHAT_TEXT_COLOR,
-        "SELECT chat_text_color FROM account_premium WHERE id = ?",
+    PrepareStatement(LOGIN_GET_ACCOUNT_PREMIUM_CHAT_COLOR,
+        "SELECT chat_color FROM account_premium WHERE id = ?",
         CONNECTION_SYNCH);
 
-    PrepareStatement(LOGIN_SET_ACCOUNT_PREMIUM_CHAT_TEXT_COLOR,
-        "UPDATE account_premium SET chat_text_color = ? WHERE id = ?",
+    PrepareStatement(LOGIN_SET_ACCOUNT_PREMIUM_CHAT_COLOR,
+        "UPDATE account_premium SET chat_color = ? WHERE id = ?",
         CONNECTION_ASYNC);
 }
 
