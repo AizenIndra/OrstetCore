@@ -749,6 +749,8 @@ public:
     void BroadcastToGuild(WorldSession* session, bool officerOnly, std::string_view msg, uint32 language = LANG_UNIVERSAL) const;
     void BroadcastPacketToRank(WorldPacket const* packet, uint8 rankId) const;
     void BroadcastPacket(WorldPacket const* packet) const;
+    /// Pushes emblem colors to connected clients using custom Addon channel (guild UI tabard portraits).
+    void BroadcastAddonGuildEmblemInfo();
 
     void MassInviteToEvent(WorldSession* session, uint32 minLevel, uint32 maxLevel, uint32 minRank);
 
@@ -820,6 +822,12 @@ public:
 
     [[nodiscard]] bool ModifyBankMoney(CharacterDatabaseTransaction trans, const uint64& amount, bool add) { return _ModifyBankMoney(trans, amount, add); }
     [[nodiscard]] uint32 GetMemberSize() const { return m_members.size(); }
+
+    /// Public wrapper for rank checks (e.g. addon channel handlers).
+    inline bool MemberHasGuildRight(Player* player, uint32 right) const
+    {
+        return _HasRankRight(player, right);
+    }
 
 protected:
     uint32 m_id;

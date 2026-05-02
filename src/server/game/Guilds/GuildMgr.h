@@ -26,6 +26,8 @@ private:
     GuildMgr();
     ~GuildMgr();
 
+    typedef std::unordered_map<uint32, Guild*> GuildContainer;
+
 public:
     static GuildMgr* instance();
 
@@ -49,8 +51,15 @@ public:
 
     void DistributeGuildXP();
     void ResetTimes();
+
+    template<class Fn>
+    void ForEachGuild(Fn&& fn) const
+    {
+        for (GuildContainer::const_iterator itr = GuildStore.begin(); itr != GuildStore.end(); ++itr)
+            fn(itr->second);
+    }
+
 protected:
-    typedef std::unordered_map<uint32, Guild*> GuildContainer;
     uint32 NextGuildId;
     GuildContainer GuildStore;
 

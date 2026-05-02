@@ -19,8 +19,62 @@
 #include "CommandScript.h"
 #include "Guild.h"
 #include "GuildMgr.h"
+#include "SharedDefines.h"
+#include "StringFormat.h"
+#include "World.h"
+#include <string>
 
 using namespace Acore::ChatCommands;
+
+namespace
+{
+bool ParseGuildNameAndUInt(std::string const& rawArgs, std::string& guildNameOut, uint32& numOut)
+{
+    std::string const args = Acore::String::Trim(rawArgs);
+    if (args.empty())
+        return false;
+
+    if (args.front() == '"')
+    {
+        std::size_t const closeQuote = args.find('"', 1);
+        if (closeQuote == std::string::npos)
+            return false;
+        guildNameOut = args.substr(1, closeQuote - 1);
+        std::string const numPart = Acore::String::Trim(args.substr(closeQuote + 1));
+        if (guildNameOut.empty() || numPart.empty())
+            return false;
+        try
+        {
+            numOut = std::stoul(numPart);
+        }
+        catch (...)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    std::size_t const pos = args.find_last_of(" \t");
+    if (pos == std::string::npos || pos == 0)
+        return false;
+
+    guildNameOut = Acore::String::Trim(args.substr(0, pos));
+    std::string const numPart = Acore::String::Trim(args.substr(pos + 1));
+    if (guildNameOut.empty() || numPart.empty())
+        return false;
+
+    try
+    {
+        numOut = std::stoul(numPart);
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    return true;
+}
+} // namespace
 
 class guild_commandscript : public CommandScript
 {
@@ -53,70 +107,72 @@ public:
     {
         if (!*_args)
             return false;
-        char* args = (char*)_args;
-        char const* guildNameStr = handler->extractQuotedArg(args);
-        if (!guildNameStr)
+
+        if (!sWorld->getBoolConfig(CONFIG_GUILD_LEVEL_ENABLE))
+        {
+            handler->PSendSysMessage("Guild leveling is disabled (Guild.Level.Enable in worldserver.conf).");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        std::string guildName;
+        uint32 newLevelRaw = 0;
+        if (!ParseGuildNameAndUInt(_args, guildName, newLevelRaw))
         {
             handler->SendSysMessage(LANG_BAD_VALUE);
             handler->SetSentErrorMessage(true);
             return false;
         }
-        char const* levelStr = handler->extractQuotedArg(strtok(nullptr, ""));
-        if (!levelStr)
+
+        if (newLevelRaw == 0 || newLevelRaw > GUILD_MAX_LEVEL)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
+            handler->PSendSysMessage("Guild level must be between 1 and {}.", GUILD_MAX_LEVEL);
             handler->SetSentErrorMessage(true);
             return false;
         }
-        uint8 newLevel = uint8(atoi(levelStr));
-        Guild* guild = sGuildMgr->GetGuildByName(guildNameStr);
-        if (guild)
+
+        Guild* guild = sGuildMgr->GetGuildByName(guildName);
+        if (!guild)
         {
-            if (newLevel > GUILD_MAX_LEVEL)
-            {
-                handler->PSendSysMessage("The indicated level is too high.");
-                return false;
-            }
-            else
-                guild->SetLevel(newLevel, true);
-        }
-        else
-        {
-            handler->PSendSysMessage("There was no guild with the name [%s] be found.", guildNameStr);
+            handler->PSendSysMessage("There was no guild with the name [{}] found.", guildName);
+            handler->SetSentErrorMessage(true);
             return false;
         }
+
+        guild->SetLevel(static_cast<uint8>(newLevelRaw), true);
         return true;
     }
+
     static bool HandleGuildGiveXpCommand(ChatHandler* handler, char const* _args)
     {
         if (!*_args)
             return false;
-        char* args = (char*)_args;
-        char const* guildNameStr = handler->extractQuotedArg(args);
-        if (!guildNameStr)
+
+        if (!sWorld->getBoolConfig(CONFIG_GUILD_LEVEL_ENABLE))
+        {
+            handler->PSendSysMessage("Guild leveling is disabled (Guild.Level.Enable in worldserver.conf).");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        std::string guildName;
+        uint32 value = 0;
+        if (!ParseGuildNameAndUInt(_args, guildName, value))
         {
             handler->SendSysMessage(LANG_BAD_VALUE);
             handler->SetSentErrorMessage(true);
             return false;
         }
-        char const* xpStr = handler->extractQuotedArg(strtok(nullptr, ""));
-        if (!xpStr)
+
+        Guild* guild = sGuildMgr->GetGuildByName(guildName);
+        if (!guild)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
+            handler->PSendSysMessage("There was no guild with the name [{}] found.", guildName);
             handler->SetSentErrorMessage(true);
             return false;
         }
-        uint32 value = uint32(atoi(xpStr));
-        Guild* guild = sGuildMgr->GetGuildByName(guildNameStr);
-        if (guild)
-        {
-            guild->GiveXp(value);
-        }
-        else
-        {
-            handler->PSendSysMessage("There was no guild with the name [%s] be found.", guildNameStr);
-            return false;
-        }
+
+        guild->GiveXp(value);
         return true;
     }
 

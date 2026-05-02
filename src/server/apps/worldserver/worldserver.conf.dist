@@ -4788,6 +4788,126 @@ Shop.Enabled = 1
 ###################################################################################################
 
 ###################################################################################################
+# PREMIUM / VIP
+#
+# --- Описание (RU) ---
+#
+#    Config.Vip.*
+#        Включает или отключает VIP/Premium команды (например .vip debuff, .vip bank).
+#        По умолчанию: 0 — выключено (команды недоступны).
+#
+#    Config.Vip.Debuff.Spell
+#        ID заклинания — аура VIP, которая вешается после .vip debuff (снятие дебаффов).
+#        0 — не применять ауру.
+#        По умолчанию на ядре часто: 80867 (может отличаться у вас).
+#
+#    Config.Vip.Buff.Command / Config.Vip.Buff.Spells
+#        Команда .vip buff: список ID заклинаний через запятую, например "1234,5678".
+#        Пустое значение — без баффов.
+#
+#    Rate.XP.Kill.Premium
+#    Rate.XP.Quest.Premium
+#    Rate.XP.Quest.DF.Premium
+#    Rate.XP.Explore.Premium
+#    Rate.Honor.Premium
+#    Rate.Reputation.Gain.Premium
+#        Множители начисления опыта за убийства, квесты (в т.ч. LFG), освоение карт, хонор и репутацию
+#        для аккаунтов с флагом премиум/VIP. 1 — как у обычного игрока.
+#
+#    SkillGain.Crafting.Premium / SkillGain.Gathering.Premium
+#        Множители прироста профессий (крафт / сбор) для премиум-аккаунтов.
+#
+# --- English (short) ---
+#
+#    Config.Vip.* : enable VIP commands. Default 0 = off.
+#    Rate.*.Premium : multipliers for XP, honor, reputation; 1 = baseline.
+
+Config.Vip.Debuff.Command       = 1
+Config.Vip.Bank.Command        = 1
+Config.Vip.Mail.Command        = 1
+Config.Vip.Repair.Command      = 1
+Config.Vip.Reset.Talents.Command = 1
+Config.Vip.Taxi.Command        = 1
+Config.Vip.Home.Command        = 1
+Config.Vip.Change.Race.Command = 1
+Config.Vip.Customize.Command   = 1
+Config.Vip.Capital.Command     = 1
+Config.Vip.Appear.Command      = 1
+Config.Vip.Summon.Command      = 1
+
+Rate.XP.Kill.Premium           = 15
+Rate.XP.Quest.Premium          = 15
+Rate.XP.Quest.DF.Premium       = 15
+Rate.XP.Explore.Premium        = 15
+Rate.Honor.Premium             = 3
+Rate.Reputation.Gain.Premium   = 10
+SkillGain.Crafting.Premium  = 10
+SkillGain.Gathering.Premium = 10
+
+#
+###################################################################################################
+
+###################################################################################################
+# GUILD LEVEL SYSTEM (система уровней и опыта гильдии)
+#
+# --- Описание (RU) ---
+#
+#    Guild.Level.Enable
+#        Включить систему опыта и уровней гильдии (прокачка, перки со стороны ядра/БД/аддона).
+#        0 — выключено, 1 — включено.
+#        Если выключено, прогресс гильдии с ядром обычно не начисляется (зависит от реализации).
+#
+#    Guild.TodayCap.XP
+#        Дневной лимит гильдейского XP на одну гильдию за сутки; после достижения начисление до сброса дня прекращается.
+#        В коде ядра: CONFIG_GUILD_DAILY_XP_CAP. В этом файле — строка ниже вида Guild.TodayCap.XP = ... (часто 50000).
+#
+#    Guild.Reward.Battleground.Enable
+#        Начислять ли XP гильдии за участие в полях боя.
+#
+#    Guild.Reward.Battleground.WinnerCount / LoserCount
+#        Сколько XP добавить за победу / поражение при включённой награде за БГ.
+#
+#    Guild.Reward.Arena.Enable
+#        Начислять ли XP гильдии за матчи на арене (rated).
+#
+#    Guild.Reward.Arena.WinnerCount / LoserCount
+#        XP за победу / проигрыш на арене при включённой настройке.
+#
+#    Guild.Reward.OnLvlUP / Guild.Reward.OnLvlUP.Count
+#        Выдать ли гильдии XP и сколько именно при повышении уровня членом гильдии.
+#
+#    Guild.Reward.OnKillPlayers.Enable / Count
+#        XP гильдии за почётное убийство (PvP), если поддерживается сборкой ядра.
+#
+#    Guild.Reward.OnKillCreature.Enable
+#        XP за убийство существ из таблицы БД creature_onkill_reward_guildxp (контент задаёт строки и суммы).
+#
+# Примечание: отображение вкладки «гильдейские перки» в книге заклинаний задаёт клиентским UI (MPQ);
+# эти параметры только логика начисления и лимиты на сервере.
+#
+# --- English (short) ---
+#
+#    Guild.Level.Enable / TodayCap.XP / Battleground.* / Arena.* / OnLvlUP.* / Kill* / Creature:
+#        Server-side guild XP tuning; see AzerothCore world config keys for equivalents if renamed.
+
+Guild.Level.Enable                 = 1
+Guild.TodayCap.XP                  = 50000
+Guild.Reward.Battleground.Enable   = 0
+Guild.Reward.Battleground.WinnerCount = 100
+Guild.Reward.Battleground.LoserCount  = 0
+Guild.Reward.Arena.Enable          = 0
+Guild.Reward.Arena.WinnerCount     = 30
+Guild.Reward.Arena.LoserCount      = 0
+Guild.Reward.OnLvlUP               = 0
+Guild.Reward.OnLvlUP.Count         = 0
+Guild.Reward.OnKillPlayers.Enable  = 0
+Guild.Reward.OnKillPlayers.Count   = 0
+Guild.Reward.OnKillCreature.Enable = 0
+
+#
+###################################################################################################
+
+###################################################################################################
 #                                                                                                 #
 # GAME SETTINGS END                                                                               #
 #                                                                                                 #

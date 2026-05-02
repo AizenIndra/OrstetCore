@@ -36,6 +36,7 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "WorldSessionMgr.h"
+#include "AddonIO.h"
 #include <boost/iterator/counting_iterator.hpp>
 
 #define MAX_GUILD_BANK_TAB_TEXT_LEN 500
@@ -1256,8 +1257,8 @@ void Guild::SetLevel(uint8 level, bool byCommand)
     }
 
     // sWorld->SendWorldText(LANG_GUILD_LEVEL_UP, m_name.c_str(), level);
-
-    std::string msg = Acore::StringFormat(ChatHandler(nullptr).GetAcoreString(LANG_GUILD_LEVEL_UP), m_name, level);
+    std::string const fmtStr = sObjectMgr->GetAcoreStringForDBCLocale(LANG_GUILD_LEVEL_UP);
+    std::string const msg = Acore::StringFormat(fmtStr, m_name, uint32(level));
 
     sWorldSessionMgr->SendServerMessage(SERVER_MSG_STRING, msg.c_str());
 
@@ -1345,6 +1346,17 @@ void Guild::HandleQuery(WorldSession* session)
     LOG_DEBUG("guild", "SMSG_GUILD_QUERY_RESPONSE [{}]", session->GetPlayerInfo());
 }
 
+void Guild::BroadcastAddonGuildEmblemInfo()
+{
+    EmblemInfo const emblem = m_emblemInfo;
+    auto const notifyPlayer = [&](Player* player)
+    {
+        player->SendAddonMessage("ASMSG_PLAYER_GUILD_EMBLEM_INFO\t{}:{}:{}:{}:{}",
+            emblem.GetStyle(), emblem.GetColor(), emblem.GetBorderStyle(), emblem.GetBorderColor(), emblem.GetBackgroundColor());
+    };
+    BroadcastWorker(notifyPlayer);
+}
+
 void Guild::HandleSetMOTD(WorldSession* session, std::string_view motd)
 {
     if (m_motd == motd)
@@ -1404,6 +1416,7 @@ void Guild::HandleSetEmblem(WorldSession* session, const EmblemInfo& emblemInfo)
         SendSaveEmblemResult(session, ERR_GUILDEMBLEM_SUCCESS); // "Guild Emblem saved."
 
         HandleQuery(session);
+        BroadcastAddonGuildEmblemInfo();
     }
 }
 
@@ -2363,6 +2376,8 @@ bool Guild::AddMember(ObjectGuid guid, uint8 rankId)
 
     // Call scripts if member was succesfully added (and stored to database)
     sScriptMgr->OnGuildAddMember(this, player, rankId);
+
+    sAddonIO->RemoveGuildFinderApplicationsForPlayer(guid);
 
     return true;
 }
